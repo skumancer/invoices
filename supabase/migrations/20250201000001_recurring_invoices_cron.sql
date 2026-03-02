@@ -56,5 +56,5 @@ $$;
 --   SELECT public.generate_recurring_invoices();
 -- Schedule: 0 0 * * * (daily at midnight UTC)
 -- If using pg_cron directly (e.g. self-hosted), uncomment below:
--- create extension if not exists pg_cron with schema extensions;
--- select cron.schedule('generate-recurring-invoices', '0 0 * * *', $$select public.generate_recurring_invoices()$$);
+create extension if not exists pg_cron with schema extensions;
+select cron.schedule('generate-recurring-invoices', '0 0 * * *', $$select public.generate_recurring_invoices()$$);

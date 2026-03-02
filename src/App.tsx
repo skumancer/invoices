@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
+import { ProfileProvider } from './contexts/ProfileContext'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { AppLayout } from './components/Layout/AppLayout'
 import { Login } from './pages/Login'
@@ -28,7 +29,9 @@ function App() {
             path="/"
             element={
               <ProtectedRoute>
-                <AppLayout />
+                <ProfileProvider>
+                  <AppLayout />
+                </ProfileProvider>
               </ProtectedRoute>
             }
           >

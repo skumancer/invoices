@@ -1,7 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { useAuth } from '../contexts/AuthContext'
-import { useProfile } from '../hooks/useProfile'
+import { useProfileContext } from '../contexts/ProfileContext'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -24,9 +22,7 @@ type ProfileForm = z.infer<typeof profileSchema>
 type PasswordForm = z.infer<typeof passwordSchema>
 
 export function SettingsPage() {
-  const navigate = useNavigate()
-  const { user, signOut } = useAuth()
-  const { profile, update: updateProfile } = useProfile(user?.id)
+  const { profile, update: updateProfile } = useProfileContext()
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   const [loading, setLoading] = useState(false)
   const [profileMessage, setProfileMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
@@ -104,28 +100,6 @@ export function SettingsPage() {
               {profileLoading ? 'Saving…' : 'Save profile'}
             </Button>
           </form>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader>
-          <h3 className="font-medium text-gray-900">Account</h3>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          <p className="text-sm text-gray-600">{user?.email}</p>
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={async () => {
-              try {
-                await signOut()
-              } catch {
-                // still send to login
-              }
-              navigate('/login', { replace: true })
-            }}
-          >
-            Sign out
-          </Button>
         </CardContent>
       </Card>
       <Card>

@@ -5,35 +5,41 @@ import type { Profile } from '../types/database'
 export function useProfile(userId: string | undefined) {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(!!userId)
+  const [error, setError] = useState<Error | null>(null)
 
   const fetchProfile = useCallback(async () => {
     if (!userId) {
       setProfile(null)
       setLoading(false)
+      setError(null)
       return
     }
     setLoading(true)
-    const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).maybeSingle()
-    if (error) {
+    setError(null)
+    const { data, error: selectErr } = await supabase.from('profiles').select('*').eq('id', userId).maybeSingle()
+    if (selectErr) {
       setProfile(null)
+      setError(selectErr as Error)
       setLoading(false)
       return
     }
     if (data) {
       setProfile(data as Profile)
-    } else {
-      const { data: inserted, error: insertErr } = await supabase
-        .from('profiles')
-        .insert({ id: userId })
-        .select()
-        .single()
-      if (insertErr) {
-        setProfile(null)
-        setLoading(false)
-        return
-      }
-      setProfile(inserted as Profile)
+      setLoading(false)
+      return
     }
+    const { data: inserted, error: insertErr } = await supabase
+      .from('profiles')
+      .insert({ id: userId })
+      .select()
+      .single()
+    if (insertErr) {
+      setProfile(null)
+      setError(insertErr as Error)
+      setLoading(false)
+      return
+    }
+    setProfile(inserted as Profile)
     setLoading(false)
   }, [userId])
 
@@ -57,5 +63,5 @@ export function useProfile(userId: string | undefined) {
     [userId]
   )
 
-  return { profile, isLoading: loading, refetch: fetchProfile, update }
+  return { profile, isLoading: loading, error, refetch: fetchProfile, update }
 }

@@ -22,8 +22,13 @@ function computeTotals(
   return { subtotal, tax, total }
 }
 
-const PDF_DESC_MAX_WIDTH = 75
-const PDF_LINE_HEIGHT = 6
+const PDF_DESC_MAX_WIDTH = 75;
+const PDF_LINE_HEIGHT = 1;
+const TABLE_LEFT = 20;
+const TABLE_RIGHT = 200;
+const TABLE_PAD = 4;
+const HEADER_ROW_HEIGHT = 4;
+const COLS_X = [20, 120, 140, 170, 200] as const;
 
 function senderLabel(profile: { first_name: string | null; last_name: string | null } | null, email: string | undefined): string {
   const first = profile?.first_name?.trim()
@@ -83,20 +88,34 @@ export function InvoiceDetailPage() {
       )
       y += 12
       doc.setFontSize(10)
-      doc.text('Description', 20, y)
-      doc.text('Qty', 120, y)
-      doc.text('Unit', 140, y)
-      doc.text('Total', 170, y)
-      y += 6
+      doc.setDrawColor(0, 0, 0)
+      doc.setLineWidth(0.2)
+      const tableTopY = y - 4
+      doc.setFont('helvetica', 'bold')
+      doc.text('Description', TABLE_LEFT + TABLE_PAD, y)
+      doc.text('Qty', 120 + TABLE_PAD, y)
+      doc.text('Unit', 140 + TABLE_PAD, y)
+      doc.text('Total', 170 + TABLE_PAD, y)
+      doc.setFont('helvetica', 'normal')
+      const headerBottomY = y + HEADER_ROW_HEIGHT
+      doc.line(TABLE_LEFT, tableTopY, TABLE_RIGHT, tableTopY)
+      doc.line(TABLE_LEFT, headerBottomY, TABLE_RIGHT, headerBottomY)
+      y += HEADER_ROW_HEIGHT
       lines.forEach((l) => {
         const descLines = doc.splitTextToSize(l.description, PDF_DESC_MAX_WIDTH)
-        doc.text(descLines, 20, y)
+        const rowContentY = y + TABLE_PAD
+        doc.text(descLines, TABLE_LEFT + TABLE_PAD, rowContentY)
         const descHeight = descLines.length * PDF_LINE_HEIGHT
-        doc.text(String(l.quantity), 120, y)
-        doc.text(`$${Number(l.unit_price).toFixed(2)}`, 140, y)
-        doc.text(`$${l.total.toFixed(2)}`, 170, y)
-        y += Math.max(descHeight, PDF_LINE_HEIGHT)
+        doc.text(String(l.quantity), 120 + TABLE_PAD, rowContentY)
+        doc.text(`$${Number(l.unit_price).toFixed(2)}`, 140 + TABLE_PAD, rowContentY)
+        doc.text(`$${l.total.toFixed(2)}`, 170 + TABLE_PAD, rowContentY)
+        const contentHeight = Math.max(descHeight, PDF_LINE_HEIGHT)
+        const rowHeight = TABLE_PAD + contentHeight + TABLE_PAD
+        doc.line(TABLE_LEFT, y + rowHeight, TABLE_RIGHT, y + rowHeight)
+        y += rowHeight
       })
+      const tableBottomY = y
+      COLS_X.forEach((x) => doc.line(x, tableTopY, x, tableBottomY))
       y += 4
       doc.setFont('helvetica', 'normal')
       doc.text(`Subtotal: $${subtotal.toFixed(2)}`, 140, y)

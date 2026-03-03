@@ -15,6 +15,7 @@ import { CustomerFormPage } from './pages/CustomerFormPage'
 import { ItemsPage } from './pages/ItemsPage'
 import { ItemFormPage } from './pages/ItemFormPage'
 import { SettingsPage } from './pages/SettingsPage'
+import { NotFoundPage } from './pages/NotFoundPage'
 
 function App() {
   return (
@@ -48,7 +49,7 @@ function App() {
             <Route path="items/:id/edit" element={<ItemFormPage />} />
             <Route path="settings" element={<SettingsPage />} />
           </Route>
-          <Route path="*" element={<Navigate to="/" replace />} />
+          <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

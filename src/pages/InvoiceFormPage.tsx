@@ -212,7 +212,7 @@ export function InvoiceFormPage() {
               </select>
               {errors.customer_id && <p className="mt-1 text-sm text-red-600">{errors.customer_id.message}</p>}
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <Input label="Issue date" type="date" error={errors.issue_date?.message} {...register('issue_date')} />
               <Input label="Due date" type="date" error={errors.due_date?.message} {...register('due_date')} />
             </div>
@@ -228,14 +228,24 @@ export function InvoiceFormPage() {
                     <option value="percent">Percent</option>
                     <option value="fixed">Fixed amount</option>
                   </select>
-                  <input
-                    type="number"
-                    min={0}
-                    step={0.01}
-                    className="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900"
-                    placeholder={watch('tax_type') === 'percent' ? '%' : '0.00'}
-                    {...register('tax_value')}
-                  />
+                  <div className="flex">
+                    {watch('tax_type') === 'fixed' && (
+                      <span className="inline-flex items-center px-3 py-2 rounded-l-lg border border-r-0 border-gray-300 bg-gray-50 text-gray-600 text-sm">
+                        $
+                      </span>
+                    )}
+                    <input
+                      type="number"
+                      min={0}
+                      step={0.01}
+                      className={[
+                        'px-3 py-2 border border-gray-300 focus:ring-2 focus:ring-gray-900',
+                        watch('tax_type') === 'fixed' ? 'rounded-r-lg w-24' : 'rounded-lg w-24',
+                      ].join(' ')}
+                      placeholder={watch('tax_type') === 'percent' ? '%' : '0.00'}
+                      {...register('tax_value')}
+                    />
+                  </div>
                 </div>
               </div>
             </div>
@@ -264,28 +274,7 @@ export function InvoiceFormPage() {
               </div>
             )}
             <div>
-              <div className="flex items-center justify-between mb-2">
-                <label className="text-sm font-medium text-gray-700">Line items</label>
-                <div className="flex gap-2">
-                  <Button type="button" variant="secondary" size="sm" onClick={addLine}>Add line</Button>
-                  {items.length > 0 && (
-                    <select
-                      className="text-sm border border-gray-300 rounded-lg px-2 py-1"
-                      value=""
-                      onChange={(e) => {
-                        const item = items.find((i) => i.id === e.target.value)
-                        if (item) addItemAsLine(item)
-                        e.target.value = ''
-                      }}
-                    >
-                      <option value="">Add saved item</option>
-                      {items.map((i) => (
-                        <option key={i.id} value={i.id}>{i.name}</option>
-                      ))}
-                    </select>
-                  )}
-                </div>
-              </div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Line items</label>
               <div className="space-y-2">
                 {lines.map((line) => (
                   <div key={line.id} className="flex gap-2 items-start">
@@ -303,17 +292,41 @@ export function InvoiceFormPage() {
                       value={line.quantity}
                       onChange={(e) => updateLine(line.id, 'quantity', Number(e.target.value))}
                     />
-                    <input
-                      type="number"
-                      min={0}
-                      step={0.01}
-                      className="w-24 px-2 py-1.5 border border-gray-300 rounded text-sm"
-                      value={line.unit_price}
-                      onChange={(e) => updateLine(line.id, 'unit_price', Number(e.target.value))}
-                    />
+                    <div className="flex items-stretch border border-gray-300 rounded text-sm overflow-hidden">
+                      <span className="inline-flex items-center pl-2 pr-1 py-1.5 bg-gray-50 text-gray-600 text-sm border-r border-gray-300">
+                        $
+                      </span>
+                      <input
+                        type="number"
+                        min={0}
+                        step={0.01}
+                        className="w-20 px-2 py-1.5 border-0 focus:ring-0 focus:outline-none text-sm"
+                        value={line.unit_price}
+                        onChange={(e) => updateLine(line.id, 'unit_price', Number(e.target.value))}
+                      />
+                    </div>
                     <Button type="button" variant="ghost" size="sm" onClick={() => removeLine(line.id)}>×</Button>
                   </div>
                 ))}
+              </div>
+              <div className="flex gap-2 mt-2">
+                <Button type="button" variant="secondary" size="sm" onClick={addLine}>Add line</Button>
+                {items.length > 0 && (
+                  <select
+                    className="text-sm border border-gray-300 rounded-lg px-2 py-1"
+                    value=""
+                    onChange={(e) => {
+                      const item = items.find((i) => i.id === e.target.value)
+                      if (item) addItemAsLine(item)
+                      e.target.value = ''
+                    }}
+                  >
+                    <option value="">Add saved item</option>
+                    {items.map((i) => (
+                      <option key={i.id} value={i.id}>{i.name}</option>
+                    ))}
+                  </select>
+                )}
               </div>
             </div>
             <Button type="submit" fullWidth>{id ? 'Update invoice' : 'Create invoice'}</Button>

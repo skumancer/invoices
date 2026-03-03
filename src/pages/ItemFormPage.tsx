@@ -81,7 +81,7 @@ export function ItemFormPage() {
             )}
             <Input label="Name" error={errors.name?.message} {...register('name')} />
             <Input label="Description" {...register('description')} />
-            <Input label="Unit price" type="number" step="0.01" error={errors.unit_price?.message} {...register('unit_price')} />
+            <Input label="Unit price" type="number" step="0.01" prefix="$" placeholder="0.00" error={errors.unit_price?.message} {...register('unit_price')} />
             <Button type="submit" fullWidth>{id ? 'Update' : 'Create'}</Button>
           </form>
         </CardContent>

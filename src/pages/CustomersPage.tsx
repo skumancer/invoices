@@ -17,17 +17,22 @@ export function CustomersPage() {
           <Button>Add customer</Button>
         </Link>
       </div>
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="space-y-2">
         {customers.map((c) => (
-          <Link key={c.id} to={`/customers/${c.id}/edit`}>
-            <Card className="hover:border-gray-300 transition-colors cursor-pointer h-full">
-              <CardContent className="p-4">
+          <Card key={c.id} className="hover:border-gray-300 transition-colors">
+            <CardContent className="p-4 flex flex-row items-center justify-between gap-4">
+              <div className="min-w-0 flex-1">
                 <p className="font-medium text-gray-900">{c.name}</p>
                 <p className="text-sm text-gray-500 capitalize">{c.type}</p>
                 {c.email && <p className="text-sm text-gray-600 truncate">{c.email}</p>}
-              </CardContent>
-            </Card>
-          </Link>
+              </div>
+              <div className="flex gap-2 shrink-0">
+                <Link to={`/customers/${c.id}/edit`}>
+                  <Button variant="secondary" size="sm">Edit</Button>
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
         ))}
       </div>
       {customers.length === 0 && (

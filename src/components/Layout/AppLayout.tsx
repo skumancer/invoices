@@ -1,6 +1,9 @@
-import { Outlet, useNavigate } from 'react-router-dom'
+import { useEffect } from 'react'
+import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { useProfileContext } from '../../contexts/ProfileContext'
+import { Button } from '../ui/Button'
+import { Card, CardContent } from '../ui/Card'
 import { NavLink } from './NavLink'
 
 const navItems = [
@@ -13,6 +16,11 @@ export function AppLayout() {
   const { user, signOut } = useAuth()
   const { profile, error: profileError } = useProfileContext()
   const navigate = useNavigate()
+  const location = useLocation()
+
+  useEffect(() => {
+    window.scrollTo(0, 0)
+  }, [location.pathname])
 
   const handleSignOut = async () => {
     try {
@@ -31,17 +39,15 @@ export function AppLayout() {
   if (staleSession) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gray-50">
-        <div className="max-w-sm w-full rounded-lg border border-amber-200 bg-amber-50 p-4 text-center">
-          <p className="text-sm font-medium text-amber-800">Your session is no longer valid.</p>
-          <p className="mt-1 text-sm text-amber-700">Please sign in again.</p>
-          <button
-            type="button"
-            onClick={handleSignOut}
-            className="mt-4 w-full rounded-lg bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-700"
-          >
-            Sign out
-          </button>
-        </div>
+        <Card className="max-w-sm w-full text-center">
+          <CardContent className="p-4">
+            <p className="text-sm font-medium text-gray-900">Your session is no longer valid.</p>
+            <p className="mt-1 text-sm text-gray-500">Please sign in again.</p>
+            <Button type="button" onClick={handleSignOut} className="mt-4" fullWidth>
+              Sign out
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     )
   }

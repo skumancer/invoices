@@ -133,7 +133,17 @@ export function InvoiceDetailPage() {
     })
     setSending(false)
     if (error) {
-      setSendResult({ ok: false, message: error.message })
+      let message = error.message
+      try {
+        const res = (error as { context?: Response }).context
+        if (res?.json) {
+          const body = (await res.json()) as { error?: string }
+          if (typeof body?.error === 'string') message = body.error
+        }
+      } catch {
+        // keep error.message
+      }
+      setSendResult({ ok: false, message })
       return
     }
     setSendResult({ ok: true, message: (data as { message?: string })?.message ?? 'Email sent.' })
@@ -201,22 +211,22 @@ export function InvoiceDetailPage() {
             </p>
           </CardHeader>
           <CardContent>
-            <table className="w-full text-sm">
+            <table className="w-full text-sm table-fixed">
               <thead>
                 <tr className="border-b border-gray-200">
-                  <th className="text-left py-2 font-medium text-gray-700">Description</th>
-                  <th className="text-right py-2 font-medium text-gray-700">Qty</th>
-                  <th className="text-right py-2 font-medium text-gray-700">Unit</th>
-                  <th className="text-right py-2 font-medium text-gray-700">Total</th>
+                  <th className="text-left py-2 font-medium text-gray-700 min-w-0">Description</th>
+                  <th className="text-right py-2 pl-4 font-medium text-gray-700 w-16 shrink-0">Qty</th>
+                  <th className="text-right py-2 pl-4 font-medium text-gray-700 w-20 shrink-0">Unit</th>
+                  <th className="text-right py-2 pl-4 font-medium text-gray-700 w-24 shrink-0">Total</th>
                 </tr>
               </thead>
               <tbody>
                 {invoice.lines.map((l) => (
                   <tr key={l.id} className="border-b border-gray-100">
-                    <td className="py-2 text-gray-900">{l.description}</td>
-                    <td className="py-2 text-right">{l.quantity}</td>
-                    <td className="py-2 text-right">${Number(l.unit_price).toFixed(2)}</td>
-                    <td className="py-2 text-right">${(l.quantity * l.unit_price).toFixed(2)}</td>
+                    <td className="py-2 text-gray-900 min-w-0">{l.description}</td>
+                    <td className="py-2 text-right pl-4 w-16 shrink-0 whitespace-nowrap">{l.quantity}</td>
+                    <td className="py-2 text-right pl-4 w-20 shrink-0 whitespace-nowrap">${Number(l.unit_price).toFixed(2)}</td>
+                    <td className="py-2 text-right pl-4 w-24 shrink-0 whitespace-nowrap">${(l.quantity * l.unit_price).toFixed(2)}</td>
                   </tr>
                 ))}
               </tbody>

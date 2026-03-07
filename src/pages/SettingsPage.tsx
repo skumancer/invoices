@@ -12,6 +12,7 @@ import { Card, CardContent, CardHeader } from '../components/ui/Card'
 const profileSchema = z.object({
   first_name: z.string().max(100).optional(),
   last_name: z.string().max(100).optional(),
+  tax_id: z.string().max(100).optional(),
 })
 
 const passwordSchema = z.object({
@@ -30,7 +31,7 @@ export function SettingsPage() {
 
   const profileForm = useForm<ProfileForm>({
     resolver: zodResolver(profileSchema),
-    defaultValues: { first_name: '', last_name: '' },
+    defaultValues: { first_name: '', last_name: '', tax_id: '' },
   })
   const passwordForm = useForm<PasswordForm>({
     resolver: zodResolver(passwordSchema),
@@ -41,6 +42,7 @@ export function SettingsPage() {
       profileForm.reset({
         first_name: profile.first_name ?? '',
         last_name: profile.last_name ?? '',
+        tax_id: profile.tax_id ?? '',
       })
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- only sync when profile loads
@@ -53,6 +55,7 @@ export function SettingsPage() {
       await updateProfile({
         first_name: data.first_name?.trim() || null,
         last_name: data.last_name?.trim() || null,
+        tax_id: data.tax_id?.trim() || null,
       })
       setProfileMessage({ type: 'success', text: 'Profile updated.' })
     } catch (e) {
@@ -96,6 +99,7 @@ export function SettingsPage() {
             )}
             <Input label="First name" {...profileForm.register('first_name')} />
             <Input label="Last name" {...profileForm.register('last_name')} />
+            <Input label="Tax / ID number" placeholder="Optional" {...profileForm.register('tax_id')} />
             <Button type="submit" size="sm" disabled={profileLoading}>
               {profileLoading ? 'Saving…' : 'Save profile'}
             </Button>

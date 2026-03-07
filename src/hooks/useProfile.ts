@@ -48,7 +48,7 @@ export function useProfile(userId: string | undefined) {
   }, [fetchProfile])
 
   const update = useCallback(
-    async (input: Partial<Pick<Profile, 'first_name' | 'last_name' | 'display_name'>>) => {
+    async (input: Partial<Pick<Profile, 'first_name' | 'last_name' | 'display_name' | 'tax_id'>>) => {
       if (!userId) return
       const { data, error } = await supabase
         .from('profiles')

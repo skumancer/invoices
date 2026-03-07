@@ -16,6 +16,7 @@ const schema = z.object({
   email: z.string().email().optional().or(z.literal('')),
   phone: z.string().optional(),
   address: z.string().optional(),
+  tax_id: z.string().optional(),
 })
 
 type FormData = z.infer<typeof schema>
@@ -30,7 +31,7 @@ export function CustomerFormPage() {
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
-    defaultValues: { type: 'person', email: '', phone: '', address: '' },
+    defaultValues: { type: 'person', email: '', phone: '', address: '', tax_id: '' },
   })
 
   useEffect(() => {
@@ -41,6 +42,7 @@ export function CustomerFormPage() {
         email: customer.email ?? '',
         phone: customer.phone ?? '',
         address: customer.address ?? '',
+        tax_id: customer.tax_id ?? '',
       })
     }
   }, [customer, reset])
@@ -56,6 +58,7 @@ export function CustomerFormPage() {
           email: data.email || null,
           phone: data.phone || null,
           address: data.address || null,
+          tax_id: data.tax_id?.trim() || null,
         })
         navigate('/customers')
       } else {
@@ -65,6 +68,7 @@ export function CustomerFormPage() {
           email: data.email || null,
           phone: data.phone || null,
           address: data.address || null,
+          tax_id: data.tax_id?.trim() || null,
           user_id: user.id,
         })
         navigate('/customers')
@@ -104,6 +108,7 @@ export function CustomerFormPage() {
             <Input label="Email" type="email" error={errors.email?.message} {...register('email')} />
             <Input label="Phone" {...register('phone')} />
             <Input label="Address" {...register('address')} />
+            <Input label="Tax / ID number" placeholder="Optional" {...register('tax_id')} />
             <Button type="submit" fullWidth>{id ? 'Update' : 'Create'}</Button>
           </form>
         </CardContent>

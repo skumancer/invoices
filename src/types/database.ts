@@ -6,6 +6,7 @@ export interface Profile {
   first_name: string | null
   last_name: string | null
   display_name: string | null
+  tax_id: string | null
   created_at: string
   updated_at: string
 }
@@ -19,6 +20,7 @@ export interface Customer {
   email: string | null
   phone: string | null
   address: string | null
+  tax_id: string | null
   created_at: string
   updated_at: string
 }

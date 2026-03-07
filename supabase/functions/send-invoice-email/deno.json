@@ -1,0 +1,6 @@
+{
+  "imports": {
+    "jspdf": "https://esm.sh/jspdf@2.5.2",
+    "jspdf-autotable": "https://esm.sh/jspdf-autotable@5"
+  }
+}

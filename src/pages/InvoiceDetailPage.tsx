@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader } from '../components/ui/Card'
 import { Modal } from '../components/ui/Modal'
 import { Input } from '../components/ui/Input'
 import { formatDate } from '../lib/format'
+import { buildInvoicePdf } from '../../supabase/functions/_shared/invoice-pdf'
 
 function computeTotals(
   lines: { quantity: number; unit_price: number }[],
@@ -21,14 +22,6 @@ function computeTotals(
   const total = subtotal + tax
   return { subtotal, tax, total }
 }
-
-const PDF_DESC_MAX_WIDTH = 75;
-const PDF_LINE_HEIGHT = 1;
-const TABLE_LEFT = 20;
-const TABLE_RIGHT = 200;
-const TABLE_PAD = 4;
-const HEADER_ROW_HEIGHT = 4;
-const COLS_X = [20, 120, 140, 170, 200] as const;
 
 function senderLabel(profile: { first_name: string | null; last_name: string | null } | null, email: string | undefined): string {
   const first = profile?.first_name?.trim()
@@ -51,8 +44,6 @@ export function InvoiceDetailPage() {
   const handleDownloadPdf = async () => {
     if (!invoice) return
     try {
-      const { jsPDF } = await import('jspdf')
-      const doc = new jsPDF()
       const customer = invoice.customer
       const lines = invoice.lines
       const { subtotal, tax, total } = computeTotals(
@@ -61,76 +52,34 @@ export function InvoiceDetailPage() {
         invoice.tax_value ?? 0
       )
       const fromLabel = senderLabel(profile, user?.email)
-      let y = 20
-      doc.setFontSize(18)
-      doc.text('INVOICE', 20, y)
-      y += 8
-      doc.setFontSize(10)
-      doc.text(`#${invoice.number}`, 20, y)
-      y += 6
-      doc.text(`From: ${fromLabel}`, 20, y)
-      y += 6
-      if (user?.email) {
-        doc.text(user.email, 20, y)
-        y += 6
-      }
-      y += 4
-      doc.text(`To: ${customer?.name ?? '—'}`, 20, y)
-      y += 6
-      if (customer?.email) {
-        doc.text(customer.email, 20, y)
-        y += 6
-      }
-      doc.text(
-        `Issue: ${formatDate(invoice.issue_date)}  Due: ${formatDate(invoice.due_date)}`,
-        20,
-        y
-      )
-      y += 12
-      doc.setFontSize(10)
-      doc.setDrawColor(0, 0, 0)
-      doc.setLineWidth(0.2)
-      const tableTopY = y - 4
-      doc.setFont('helvetica', 'bold')
-      doc.text('Description', TABLE_LEFT + TABLE_PAD, y)
-      doc.text('Qty', 120 + TABLE_PAD, y)
-      doc.text('Unit', 140 + TABLE_PAD, y)
-      doc.text('Total', 170 + TABLE_PAD, y)
-      doc.setFont('helvetica', 'normal')
-      const headerBottomY = y + HEADER_ROW_HEIGHT
-      doc.line(TABLE_LEFT, tableTopY, TABLE_RIGHT, tableTopY)
-      doc.line(TABLE_LEFT, headerBottomY, TABLE_RIGHT, headerBottomY)
-      y += HEADER_ROW_HEIGHT
-      lines.forEach((l) => {
-        const descLines = doc.splitTextToSize(l.description, PDF_DESC_MAX_WIDTH)
-        const rowContentY = y + TABLE_PAD
-        doc.text(descLines, TABLE_LEFT + TABLE_PAD, rowContentY)
-        const descHeight = descLines.length * PDF_LINE_HEIGHT
-        doc.text(String(l.quantity), 120 + TABLE_PAD, rowContentY)
-        doc.text(`$${Number(l.unit_price).toFixed(2)}`, 140 + TABLE_PAD, rowContentY)
-        doc.text(`$${l.total.toFixed(2)}`, 170 + TABLE_PAD, rowContentY)
-        const contentHeight = Math.max(descHeight, PDF_LINE_HEIGHT)
-        const rowHeight = TABLE_PAD + contentHeight + TABLE_PAD
-        doc.line(TABLE_LEFT, y + rowHeight, TABLE_RIGHT, y + rowHeight)
-        y += rowHeight
+      const pdfBytes = buildInvoicePdf({
+        invNumber: String(invoice.number),
+        fromLabel: fromLabel ?? '—',
+        fromEmail: user?.email ?? '',
+        fromTaxId: profile?.tax_id?.trim() || null,
+        toName: customer?.name ?? '—',
+        toEmail: customer?.email ?? '',
+        toTaxId: customer?.tax_id?.trim() || null,
+        issueDate: formatDate(invoice.issue_date),
+        dueDate: formatDate(invoice.due_date),
+        lines: lines.map((l) => ({
+          description: l.description,
+          quantity: l.quantity,
+          unit_price: l.unit_price,
+        })),
+        subtotal,
+        tax,
+        total,
+        taxType: invoice.tax_type ?? null,
+        taxValue: invoice.tax_value ?? 0,
       })
-      const tableBottomY = y
-      COLS_X.forEach((x) => doc.line(x, tableTopY, x, tableBottomY))
-      y += 4
-      doc.setFont('helvetica', 'normal')
-      doc.text(`Subtotal: $${subtotal.toFixed(2)}`, 140, y)
-      y += 6
-      if (tax > 0) {
-        const label =
-          invoice.tax_type === 'percent'
-            ? `Tax (${invoice.tax_value}%):`
-            : 'Tax:'
-        doc.text(`${label} $${tax.toFixed(2)}`, 140, y)
-        y += 6
-      }
-      doc.setFont('helvetica', 'bold')
-      doc.text(`Total: $${total.toFixed(2)}`, 140, y)
-      doc.save(`invoice-${invoice.number}.pdf`)
+      const blob = new Blob([new Uint8Array(pdfBytes)], { type: 'application/pdf' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `invoice-${invoice.number}.pdf`
+      a.click()
+      URL.revokeObjectURL(url)
     } catch {
       window.print()
     }
@@ -222,9 +171,11 @@ export function InvoiceDetailPage() {
         <Card className="print:shadow-none print:border">
           <CardHeader>
             <p className="text-sm text-gray-500 mb-1">From: {senderLabel(profile, user?.email)}</p>
-            {user?.email && <p className="text-sm text-gray-600 mb-2">{user.email}</p>}
-            <p className="font-medium text-gray-900">{customer?.name ?? '—'}</p>
+            {user?.email && <p className="text-sm text-gray-600">{user.email}</p>}
+            {profile?.tax_id?.trim() && <p className="text-sm text-gray-600">Tax ID: {profile.tax_id.trim()}</p>}
+            <p className="font-medium text-gray-900 mt-2">{customer?.name ?? '—'}</p>
             {customer?.email && <p className="text-sm text-gray-600">{customer.email}</p>}
+            {customer?.tax_id?.trim() && <p className="text-sm text-gray-600">Tax ID: {customer.tax_id.trim()}</p>}
             <p className="text-sm text-gray-500">
               Issue: {formatDate(invoice.issue_date)} · Due: {formatDate(invoice.due_date)}
             </p>
@@ -232,7 +183,7 @@ export function InvoiceDetailPage() {
           <CardContent>
             <table className="w-full text-sm table-fixed">
               <thead>
-                <tr className="border-b border-gray-200">
+                <tr className="border-b border-gray-200 bg-gray-100">
                   <th className="text-left py-2 font-medium text-gray-700 min-w-0">Description</th>
                   <th className="text-right py-2 pl-4 font-medium text-gray-700 w-16 shrink-0">Qty</th>
                   <th className="text-right py-2 pl-4 font-medium text-gray-700 w-20 shrink-0">Unit</th>

@@ -217,8 +217,12 @@ export function InvoiceFormPage() {
               {errors.customer_id && <p className="mt-1 text-sm text-red-600">{errors.customer_id.message}</p>}
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              <Input label="Issue date" type="date" error={errors.issue_date?.message} {...register('issue_date')} />
-              <Input label="Due date" type="date" error={errors.due_date?.message} {...register('due_date')} />
+              <div className="min-w-0">
+                <Input label="Issue date" type="date" error={errors.issue_date?.message} {...register('issue_date')} />
+              </div>
+              <div className="min-w-0">
+                <Input label="Due date" type="date" error={errors.due_date?.message} {...register('due_date')} />
+              </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>

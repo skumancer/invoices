@@ -1,10 +1,14 @@
 import { useState, useEffect } from 'react'
+import { useAuth } from '../contexts/AuthContext'
 import { useProfileContext } from '../contexts/ProfileContext'
 import { useForm } from 'react-hook-form'
+import type { Resolver } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { supabase } from '../lib/supabase'
 import { getAuthErrorMessage } from '../lib/auth'
+import { formatInvoiceNumber } from '../lib/invoice-number'
+import { useInvoiceSequence } from '../hooks/useInvoiceSequence'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
 import { Card, CardContent, CardHeader } from '../components/ui/Card'
@@ -19,15 +23,26 @@ const passwordSchema = z.object({
   password: z.string().min(6, 'At least 6 characters'),
 })
 
+const sequenceSchema = z.object({
+  prefix: z.string().max(50).optional(),
+  suffix: z.string().max(50).optional(),
+  length: z.coerce.number().int().min(1).max(10).default(1),
+})
+
 type ProfileForm = z.infer<typeof profileSchema>
 type PasswordForm = z.infer<typeof passwordSchema>
+type SequenceForm = z.infer<typeof sequenceSchema>
 
 export function SettingsPage() {
+  const { user } = useAuth()
   const { profile, update: updateProfile } = useProfileContext()
+  const { sequence, isLoading: sequenceLoading, updateSequence } = useInvoiceSequence(user?.id)
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   const [loading, setLoading] = useState(false)
   const [profileMessage, setProfileMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   const [profileLoading, setProfileLoading] = useState(false)
+  const [sequenceMessage, setSequenceMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+  const [sequenceSaving, setSequenceSaving] = useState(false)
 
   const profileForm = useForm<ProfileForm>({
     resolver: zodResolver(profileSchema),
@@ -35,6 +50,10 @@ export function SettingsPage() {
   })
   const passwordForm = useForm<PasswordForm>({
     resolver: zodResolver(passwordSchema),
+  })
+  const sequenceForm = useForm<SequenceForm>({
+    resolver: zodResolver(sequenceSchema) as Resolver<SequenceForm>,
+    defaultValues: { prefix: '', suffix: '', length: 1 },
   })
 
   useEffect(() => {
@@ -47,6 +66,17 @@ export function SettingsPage() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- only sync when profile loads
   }, [profile])
+
+  useEffect(() => {
+    if (sequence) {
+      sequenceForm.reset({
+        prefix: sequence.prefix ?? '',
+        suffix: sequence.suffix ?? '',
+        length: sequence.length ?? 1,
+      })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only sync when sequence loads
+  }, [sequence])
 
   const onProfileSubmit = async (data: ProfileForm) => {
     setProfileMessage(null)
@@ -62,6 +92,23 @@ export function SettingsPage() {
       setProfileMessage({ type: 'error', text: getAuthErrorMessage(e) })
     } finally {
       setProfileLoading(false)
+    }
+  }
+
+  const onSequenceSubmit = async (data: SequenceForm) => {
+    setSequenceMessage(null)
+    setSequenceSaving(true)
+    try {
+      await updateSequence({
+        prefix: data.prefix?.trim() ?? '',
+        suffix: data.suffix?.trim() ?? '',
+        length: data.length ?? 1,
+      })
+      setSequenceMessage({ type: 'success', text: 'Invoice number format updated.' })
+    } catch (e) {
+      setSequenceMessage({ type: 'error', text: getAuthErrorMessage(e) })
+    } finally {
+      setSequenceSaving(false)
     }
   }
 
@@ -102,6 +149,31 @@ export function SettingsPage() {
             <Input label="Tax / ID number" placeholder="Optional" {...profileForm.register('tax_id')} />
             <Button type="submit" size="sm" disabled={profileLoading}>
               {profileLoading ? 'Saving…' : 'Save profile'}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader>
+          <h3 className="font-medium text-gray-900">Invoice number format</h3>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={sequenceForm.handleSubmit(onSequenceSubmit)} className="space-y-4">
+            {sequenceMessage && (
+              <p className={`text-sm p-2 rounded-lg ${sequenceMessage.type === 'success' ? 'text-green-700 bg-green-50' : 'text-red-600 bg-red-50'}`}>
+                {sequenceMessage.text}
+              </p>
+            )}
+            <Input label="Prefix" placeholder="e.g. INV-" {...sequenceForm.register('prefix')} />
+            <Input label="Number of digits" type="number" min={1} max={10} error={sequenceForm.formState.errors.length?.message} {...sequenceForm.register('length')} />
+            <Input label="Suffix" placeholder="e.g. -2025" {...sequenceForm.register('suffix')} />
+            {!sequenceLoading && sequence && (
+              <p className="text-sm text-gray-600">
+                Next number: <span className="font-medium">{formatInvoiceNumber(sequenceForm.watch('prefix') ?? '', sequenceForm.watch('length') ?? 1, sequenceForm.watch('suffix') ?? '', (sequence?.counter ?? 0) + 1)}</span>
+              </p>
+            )}
+            <Button type="submit" size="sm" disabled={sequenceSaving || sequenceLoading}>
+              {sequenceSaving ? 'Saving…' : 'Save format'}
             </Button>
           </form>
         </CardContent>

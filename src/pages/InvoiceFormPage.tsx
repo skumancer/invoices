@@ -5,8 +5,10 @@ import { z } from 'zod'
 import { useEffect, useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { useInvoice, useInvoices } from '../hooks/useInvoices'
+import { useInvoiceSequence } from '../hooks/useInvoiceSequence'
 import { useCustomers } from '../hooks/useCustomers'
 import { useInvoiceItems } from '../hooks/useInvoiceItems'
+import { formatInvoiceNumber } from '../lib/invoice-number'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
 import { Card, CardContent, CardHeader } from '../components/ui/Card'
@@ -15,11 +17,10 @@ import type { InvoiceLine } from '../types/database'
 
 const schema = z.object({
   customer_id: z.string().min(1, 'Select a customer'),
-  number: z.coerce.number().int().min(1, 'Required'),
-  status: z.enum(['draft', 'sent', 'paid']),
+  status: z.enum(['draft', 'sent', 'paid', 'cancelled']),
   issue_date: z.string().min(1, 'Required'),
   due_date: z.string().min(1, 'Required'),
-  tax_type: z.enum(['fixed', 'percent']).optional().nullable(),
+  tax_type: z.union([z.enum(['fixed', 'percent']), z.literal('')]).optional().nullable(),
   tax_value: z.coerce.number().min(0).optional().default(0),
   is_recurring: z.boolean(),
   recurrence_interval: z.enum(['monthly', 'yearly']).optional(),
@@ -42,15 +43,15 @@ export function InvoiceFormPage() {
   const { user } = useAuth()
   const { invoice, isLoading: loadingInvoice } = useInvoice(id ?? null)
   const { create, update, getNextNumber } = useInvoices()
+  const { sequence } = useInvoiceSequence(user?.id)
   const { customers } = useCustomers()
   const { items } = useInvoiceItems()
   const [lines, setLines] = useState<LineRow[]>([])
   const [submitError, setSubmitError] = useState<string | null>(null)
 
-  const { register, handleSubmit, watch, reset, setValue, formState: { errors } } = useForm<FormData>({
+  const { register, handleSubmit, watch, reset, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema) as never,
     defaultValues: {
-      number: 1,
       status: 'draft',
       issue_date: new Date().toISOString().slice(0, 10),
       due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
@@ -65,14 +66,13 @@ export function InvoiceFormPage() {
   const isRecurring = watch('is_recurring')
 
   useEffect(() => {
-    if (invoice && (invoice.status === 'sent' || invoice.status === 'paid')) {
+    if (invoice && (invoice.status === 'sent' || invoice.status === 'paid' || invoice.status === 'cancelled')) {
       navigate(`/invoices/${id}`, { replace: true })
       return
     }
     if (invoice) {
       reset({
         customer_id: invoice.customer_id,
-        number: invoice.number,
         status: invoice.status,
         issue_date: invoice.issue_date.slice(0, 10),
         due_date: invoice.due_date.slice(0, 10),
@@ -93,12 +93,6 @@ export function InvoiceFormPage() {
       )
     }
   }, [invoice, reset])
-
-  useEffect(() => {
-    if (!id && user) {
-      getNextNumber(user.id).then((next) => setValue('number', next))
-    }
-  }, [id, user?.id, getNextNumber, setValue])
 
   const addLine = () => {
     setLines((prev) => [
@@ -146,10 +140,9 @@ export function InvoiceFormPage() {
         sort_order: i,
         invoice_item_id: l.invoice_item_id,
       }))
-    const invPayload = {
+    const basePayload = {
       user_id: user.id,
       customer_id: data.customer_id,
-      number: data.number,
       status: data.status as InvoiceStatus,
       issue_date: data.issue_date,
       due_date: data.due_date,
@@ -165,13 +158,19 @@ export function InvoiceFormPage() {
       const next = new Date(due)
       if (data.recurrence_interval === 'yearly') next.setFullYear(next.getFullYear() + 1)
       else next.setMonth(next.getMonth() + 1)
-      ;(invPayload as { next_recurrence_at: string }).next_recurrence_at = next.toISOString()
+      ;(basePayload as { next_recurrence_at: string }).next_recurrence_at = next.toISOString()
     }
     try {
       if (id) {
-        await update(id, invPayload, linePayload)
-        navigate('/invoices')
+        await update(id, basePayload, linePayload)
+        navigate(`/invoices/${id}`)
       } else {
+        const counter = await getNextNumber(user.id)
+        const prefix = sequence?.prefix ?? ''
+        const length = sequence?.length ?? 1
+        const suffix = sequence?.suffix ?? ''
+        const number_display = formatInvoiceNumber(prefix, length, suffix, counter)
+        const invPayload = { ...basePayload, number: counter, number_display }
         await create(invPayload, linePayload)
         navigate('/invoices')
       }
@@ -197,7 +196,12 @@ export function InvoiceFormPage() {
               <p className="text-sm text-red-600 bg-red-50 p-2 rounded-lg">{submitError}</p>
             )}
             <div>
-              <Input label="Invoice number" type="number" min={1} error={errors.number?.message} {...register('number')} />
+              <label className="block text-sm font-medium text-gray-700 mb-1">Invoice number</label>
+              <p className="text-gray-700 py-2">
+                {id
+                  ? (invoice?.number_display ?? String(invoice?.number ?? '—'))
+                  : `Next: ${formatInvoiceNumber(sequence?.prefix ?? '', sequence?.length ?? 1, sequence?.suffix ?? '', (sequence?.counter ?? 0) + 1)}`}
+              </p>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Customer</label>
@@ -255,6 +259,7 @@ export function InvoiceFormPage() {
                 <option value="draft">Draft</option>
                 <option value="sent">Sent</option>
                 <option value="paid">Paid</option>
+                <option value="cancelled">Cancelled</option>
               </select>
             </div>
             <div className="flex items-center gap-2">

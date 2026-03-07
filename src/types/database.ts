@@ -1,5 +1,5 @@
 export type CustomerType = 'company' | 'person'
-export type InvoiceStatus = 'draft' | 'sent' | 'paid'
+export type InvoiceStatus = 'draft' | 'sent' | 'paid' | 'cancelled'
 
 export interface Profile {
   id: string
@@ -36,12 +36,21 @@ export interface InvoiceItem {
 
 export type TaxType = 'fixed' | 'percent' | null
 
+export interface InvoiceSequence {
+  user_id: string
+  prefix: string
+  suffix: string
+  length: number
+  counter: number
+}
+
 export interface Invoice {
   id: string
   user_id: string
   customer_id: string
   status: InvoiceStatus
   number: number
+  number_display: string | null
   issue_date: string
   due_date: string
   is_recurring: boolean

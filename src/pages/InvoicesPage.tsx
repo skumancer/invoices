@@ -9,6 +9,7 @@ const statusColors: Record<InvoiceStatus, string> = {
   draft: 'bg-gray-100 text-gray-700',
   sent: 'bg-blue-100 text-blue-800',
   paid: 'bg-green-100 text-green-800',
+  cancelled: 'bg-red-100 text-red-800',
 }
 
 export function InvoicesPage() {
@@ -29,11 +30,11 @@ export function InvoicesPage() {
         {invoices.map((inv) => {
           const customer = (inv as { customer?: { name: string } }).customer
           return (
-            <Link key={inv.id} to={`/invoices/${inv.id}`}>
+            <Link key={inv.id} to={`/invoices/${inv.id}`} className="block">
               <Card className="hover:border-gray-300 transition-colors">
                 <CardContent className="p-4 flex flex-row items-center justify-between gap-4">
                   <div className="min-w-0 flex-1">
-                    <p className="font-medium text-gray-900">#{inv.number} · {customer?.name ?? '—'}</p>
+                    <p className="font-medium text-gray-900">#{inv.number_display ?? inv.number} · {customer?.name ?? '—'}</p>
                     <p className="text-sm text-gray-500">
                       Due {formatDate(inv.due_date)} · Issue {formatDate(inv.issue_date)}
                     </p>

@@ -74,14 +74,9 @@ export function useInvoices() {
   )
 
   const getNextNumber = useCallback(async (userId: string): Promise<number> => {
-    const { data } = await supabase
-      .from('invoices')
-      .select('number')
-      .eq('user_id', userId)
-      .order('number', { ascending: false })
-      .limit(1)
-      .maybeSingle()
-    return ((data as { number: number } | null)?.number ?? 0) + 1
+    const { data, error } = await supabase.rpc('get_next_invoice_number', { p_user_id: userId })
+    if (error) throw error
+    return data as number
   }, [])
 
   return { invoices, isLoading: loading, error, create, update, remove, getNextNumber, refetch: fetchInvoices }

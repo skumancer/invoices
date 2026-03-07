@@ -53,7 +53,7 @@ export function InvoiceDetailPage() {
       )
       const fromLabel = senderLabel(profile, user?.email)
       const pdfBytes = buildInvoicePdf({
-        invNumber: String(invoice.number),
+        invNumber: invoice.number_display ?? String(invoice.number),
         fromLabel: fromLabel ?? '—',
         fromEmail: user?.email ?? '',
         fromTaxId: profile?.tax_id?.trim() || null,
@@ -77,7 +77,7 @@ export function InvoiceDetailPage() {
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = `invoice-${invoice.number}.pdf`
+      a.download = `invoice-${invoice.number_display ?? invoice.number}.pdf`
       a.click()
       URL.revokeObjectURL(url)
     } catch {
@@ -126,12 +126,12 @@ export function InvoiceDetailPage() {
     invoice.tax_type ?? null,
     invoice.tax_value ?? 0
   )
-  const isLocked = invoice.status === 'sent' || invoice.status === 'paid'
+  const isLocked = invoice.status === 'sent' || invoice.status === 'paid' || invoice.status === 'cancelled'
 
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-lg font-semibold text-gray-900">Invoice #{invoice.number}</h2>
+        <h2 className="text-lg font-semibold text-gray-900">Invoice #{invoice.number_display ?? invoice.number}</h2>
         <div className="flex gap-2">
           <Button variant="secondary" size="sm" onClick={() => window.print()}>
             Print

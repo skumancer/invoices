@@ -78,7 +78,7 @@ Deno.serve(async (req: Request) => {
     const taxValue = Number((inv as { tax_value?: number }).tax_value ?? 0);
     const tax = !taxType || taxValue === 0 ? 0 : taxType === "percent" ? (subtotal * taxValue) / 100 : taxValue;
     const total = subtotal + tax;
-    const invNumber = String((inv as { number?: number }).number ?? "");
+    const invNumber = (inv as { number_display?: string | null; number?: number }).number_display ?? String((inv as { number?: number }).number ?? "");
     const fromTaxId = (profile as { tax_id?: string | null } | null)?.tax_id?.trim() || null;
     const toTaxId = customer?.tax_id?.trim() || null;
     const pdfBytes = buildInvoicePdf({

@@ -1,5 +1,4 @@
-import { useEffect } from 'react'
-import { Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { useProfileContext } from '../../contexts/ProfileContext'
 import { Button } from '../ui/Button'
@@ -16,11 +15,6 @@ export function AppLayout() {
   const { user, signOut } = useAuth()
   const { profile, error: profileError } = useProfileContext()
   const navigate = useNavigate()
-  const location = useLocation()
-
-  useEffect(() => {
-    window.scrollTo(0, 0)
-  }, [location.pathname])
 
   const handleSignOut = async () => {
     try {

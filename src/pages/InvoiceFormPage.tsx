@@ -2,7 +2,7 @@ import { useNavigate, useParams, Link } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { useInvoice, useInvoices } from '../hooks/useInvoices'
 import { useInvoiceSequence } from '../hooks/useInvoiceSequence'
@@ -29,6 +29,8 @@ const schema = z.object({
 
 type FormData = z.infer<typeof schema>
 
+const uid = () => Math.random().toString(36).slice(2)
+
 interface LineRow {
   id: string
   description: string
@@ -48,6 +50,7 @@ export function InvoiceFormPage() {
   const { items } = useInvoiceItems()
   const [lines, setLines] = useState<LineRow[]>([])
   const [submitError, setSubmitError] = useState<string | null>(null)
+  const initializedForId = useRef<string | null>(null)
 
   const { register, handleSubmit, watch, reset, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema) as never,
@@ -70,7 +73,8 @@ export function InvoiceFormPage() {
       navigate(`/invoices/${id}`, { replace: true })
       return
     }
-    if (invoice) {
+    if (invoice && initializedForId.current !== invoice.id) {
+      initializedForId.current = invoice.id
       reset({
         customer_id: invoice.customer_id,
         status: invoice.status,
@@ -98,7 +102,7 @@ export function InvoiceFormPage() {
     setLines((prev) => [
       ...prev,
       {
-        id: crypto.randomUUID(),
+        id: uid(),
         description: '',
         quantity: 1,
         unit_price: 0,
@@ -111,7 +115,7 @@ export function InvoiceFormPage() {
     setLines((prev) => [
       ...prev,
       {
-        id: crypto.randomUUID(),
+        id: uid(),
         description: item.description || item.name,
         quantity: 1,
         unit_price: Number(item.unit_price),
@@ -158,7 +162,7 @@ export function InvoiceFormPage() {
       const next = new Date(due)
       if (data.recurrence_interval === 'yearly') next.setFullYear(next.getFullYear() + 1)
       else next.setMonth(next.getMonth() + 1)
-      ;(basePayload as { next_recurrence_at: string }).next_recurrence_at = next.toISOString()
+        ; (basePayload as { next_recurrence_at: string }).next_recurrence_at = next.toISOString()
     }
     try {
       if (id) {
@@ -216,7 +220,7 @@ export function InvoiceFormPage() {
               </select>
               {errors.customer_id && <p className="mt-1 text-sm text-red-600">{errors.customer_id.message}</p>}
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="min-w-0">
                 <Input label="Issue date" type="date" error={errors.issue_date?.message} {...register('issue_date')} />
               </div>
@@ -327,7 +331,6 @@ export function InvoiceFormPage() {
                     onChange={(e) => {
                       const item = items.find((i) => i.id === e.target.value)
                       if (item) addItemAsLine(item)
-                      e.target.value = ''
                     }}
                   >
                     <option value="">Add saved item</option>

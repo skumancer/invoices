@@ -5,3 +5,12 @@ body {
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
 }
+
+input[type="date"],
+input[type="datetime-local"] {
+  -webkit-appearance: none;
+  appearance: none;
+  display: block;
+  min-width: 0;
+  box-sizing: border-box;
+}

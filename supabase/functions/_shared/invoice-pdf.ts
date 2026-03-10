@@ -106,16 +106,22 @@ export function buildInvoicePdf(params: BuildInvoicePdfParams): Uint8Array {
   });
 
   y = (doc as { lastAutoTable?: { finalY: number } }).lastAutoTable!.finalY + 8;
+  const labelX = MARGIN_LEFT + TABLE_WIDTH - 60;
+  const amountX = MARGIN_LEFT + TABLE_WIDTH;
+
   doc.setFont("helvetica", "normal");
-  doc.text(`Subtotal: $${params.subtotal.toFixed(2)}`, MARGIN_LEFT + TABLE_WIDTH - 30, y);
+  doc.text("Subtotal:", labelX, y);
+  doc.text(`$${params.subtotal.toFixed(2)}`, amountX, y, { align: "right" });
   y += 6;
   if (params.tax > 0) {
     const label = params.taxType === "percent" ? `Tax (${params.taxValue}%):` : "Tax:";
-    doc.text(`${label} $${params.tax.toFixed(2)}`, MARGIN_LEFT + TABLE_WIDTH - 30, y);
+    doc.text(label, labelX, y);
+    doc.text(`$${params.tax.toFixed(2)}`, amountX, y, { align: "right" });
     y += 6;
   }
   doc.setFont("helvetica", "bold");
-  doc.text(`Total: $${params.total.toFixed(2)}`, MARGIN_LEFT + TABLE_WIDTH - 30, y);
+  doc.text("Total:", labelX, y);
+  doc.text(`$${params.total.toFixed(2)}`, amountX, y, { align: "right" });
   const arrayBuffer = doc.output("arraybuffer");
   return new Uint8Array(arrayBuffer);
 }

@@ -11,6 +11,7 @@ import { Input } from '../components/ui/Input'
 import { formatDate } from '../lib/format'
 import { buildInvoicePdf } from '../../supabase/functions/_shared/invoice-pdf'
 import { recurrenceLabel } from '../lib/recurrence'
+import { statusColors } from '../lib/invoice-status'
 
 function computeTotals(
   lines: { quantity: number; unit_price: number }[],
@@ -169,6 +170,7 @@ export function InvoiceDetailPage() {
     invoice.tax_value ?? 0
   )
   const isLocked = invoice.status === 'sent' || invoice.status === 'paid' || invoice.status === 'cancelled'
+  const canEdit = !isLocked || (invoice.is_recurring && invoice.status === 'sent')
 
   return (
     <div className="space-y-4">
@@ -194,7 +196,7 @@ export function InvoiceDetailPage() {
               {stopping ? 'Stopping…' : 'Stop recurrence'}
             </Button>
           )}
-          {!isLocked && (
+          {canEdit && (
             <Link to={`/invoices/${id}/edit`}>
               <Button size="sm">Edit</Button>
             </Link>
@@ -241,8 +243,9 @@ export function InvoiceDetailPage() {
       </Modal>
       <div ref={printRef}>
         <Card className="print:shadow-none print:border">
-          <CardHeader>
-            <p className="text-sm text-gray-500 mb-1">From: {senderLabel(profile, user?.email)}</p>
+          <CardHeader className="flex flex-row justify-between items-start gap-4">
+            <div>
+              <p className="text-sm text-gray-500 mb-1">From: {senderLabel(profile, user?.email)}</p>
             {user?.email && <p className="text-sm text-gray-600">{user.email}</p>}
             {profile?.tax_id?.trim() && <p className="text-sm text-gray-600">Tax ID: {profile.tax_id.trim()}</p>}
             <p className="font-medium text-gray-900 mt-2">{customer?.name ?? '—'}</p>
@@ -259,6 +262,10 @@ export function InvoiceDetailPage() {
                 )}
               </p>
             )}
+            </div>
+            <span className={`px-2 py-0.5 rounded-full text-xs font-medium capitalize shrink-0 print:inline ${statusColors[invoice.status]}`}>
+              {invoice.status}
+            </span>
           </CardHeader>
           <CardContent>
             <table className="w-full text-sm table-fixed">

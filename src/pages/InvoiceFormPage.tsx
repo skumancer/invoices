@@ -74,7 +74,8 @@ export function InvoiceFormPage() {
   const isRecurring = watch('is_recurring')
 
   useEffect(() => {
-    if (invoice && (invoice.status === 'sent' || invoice.status === 'paid' || invoice.status === 'cancelled')) {
+    const locked = invoice && (invoice.status === 'paid' || invoice.status === 'cancelled' || (invoice.status === 'sent' && !invoice.is_recurring));
+    if (invoice && locked) {
       navigate(`/invoices/${id}`, { replace: true })
       return
     }

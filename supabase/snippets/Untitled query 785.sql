@@ -1,0 +1,1 @@
+select generate_recurring_invoices()

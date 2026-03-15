@@ -10,7 +10,7 @@ export interface Profile {
   created_at: string
   updated_at: string
 }
-export type RecurrenceInterval = 'monthly' | 'yearly'
+export type RecurrenceUnit = 'days' | 'weeks' | 'months' | 'years'
 
 export interface Customer {
   id: string
@@ -54,8 +54,8 @@ export interface Invoice {
   issue_date: string
   due_date: string
   is_recurring: boolean
-  recurrence_interval: RecurrenceInterval | null
-  recurrence_day: number | null
+  recurrence_every: number | null
+  recurrence_unit: RecurrenceUnit | null
   next_recurrence_at: string | null
   tax_type: TaxType
   tax_value: number

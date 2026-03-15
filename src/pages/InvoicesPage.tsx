@@ -4,6 +4,7 @@ import { formatDate } from '../lib/format'
 import { Button } from '../components/ui/Button'
 import { Card, CardContent } from '../components/ui/Card'
 import type { InvoiceStatus } from '../types/database'
+import { recurrenceLabel } from '../lib/recurrence'
 
 const statusColors: Record<InvoiceStatus, string> = {
   draft: 'bg-gray-100 text-gray-700',
@@ -18,6 +19,9 @@ export function InvoicesPage() {
   if (isLoading) return <p className="text-gray-500">Loading invoices...</p>
   if (error) return <p className="text-red-600">Error: {error.message}</p>
 
+  const recurring = invoices.filter((inv) => inv.is_recurring)
+  const regular = invoices.filter((inv) => !inv.is_recurring)
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -26,8 +30,39 @@ export function InvoicesPage() {
           <Button>New invoice</Button>
         </Link>
       </div>
+      {recurring.length > 0 && (
+        <div className="space-y-2">
+          <h3 className="text-sm font-medium text-gray-700">Recurring invoices</h3>
+          {recurring.map((inv) => {
+            const customer = (inv as { customer?: { name: string } }).customer
+            return (
+              <Link key={inv.id} to={`/invoices/${inv.id}`} className="block">
+                <Card className="hover:border-gray-300 transition-colors">
+                  <CardContent className="p-4 flex flex-row items-center justify-between gap-4">
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium text-gray-900">
+                        #{inv.number_display ?? inv.number} · {customer?.name ?? '—'}
+                      </p>
+                      <p className="text-sm text-gray-500">
+                        {recurrenceLabel(inv.recurrence_every, inv.recurrence_unit)}
+                        {inv.next_recurrence_at && (
+                          <> · Next: {formatDate(inv.next_recurrence_at)}</>
+                        )}
+                      </p>
+                    </div>
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium capitalize shrink-0 ${statusColors[inv.status]}`}>
+                      {inv.status}
+                    </span>
+                  </CardContent>
+                </Card>
+              </Link>
+            )
+          })}
+        </div>
+      )}
       <div className="space-y-2">
-        {invoices.map((inv) => {
+        <h3 className="text-sm font-medium text-gray-700">Invoices</h3>
+        {regular.map((inv) => {
           const customer = (inv as { customer?: { name: string } }).customer
           return (
             <Link key={inv.id} to={`/invoices/${inv.id}`} className="block">

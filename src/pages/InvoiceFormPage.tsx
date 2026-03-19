@@ -8,10 +8,12 @@ import { useInvoice, useInvoices } from '../hooks/useInvoices'
 import { useInvoiceSequence } from '../hooks/useInvoiceSequence'
 import { useCustomers } from '../hooks/useCustomers'
 import { useInvoiceItems } from '../hooks/useInvoiceItems'
-import { formatInvoiceNumber } from '../lib/invoice-number'
+import { formatInvoiceDisplay, getNextInvoiceCounter } from '../lib/invoice-number'
+import { supabase } from '../lib/supabase'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
 import { Card, CardContent, CardHeader } from '../components/ui/Card'
+import { InlineInvoiceNumberInput } from '../components/ui/InlineInvoiceNumberInput'
 import type { Invoice, InvoiceStatus, RecurrenceUnit, TaxType } from '../types/database'
 import type { InvoiceLine } from '../types/database'
 
@@ -20,6 +22,7 @@ const schema = z.object({
   status: z.enum(['draft', 'sent', 'paid', 'cancelled']),
   issue_date: z.string().min(1, 'Required'),
   due_date: z.string().min(1, 'Required'),
+  number: z.coerce.number().min(1).optional(),
   tax_type: z.union([z.enum(['fixed', 'percent']), z.literal('')]).optional().nullable(),
   tax_value: z.coerce.number().min(0).optional().default(0),
   is_recurring: z.boolean(),
@@ -39,7 +42,7 @@ interface LineRow {
   id: string
   description: string
   quantity: number
-  unit_price: number
+  unit_price: number | ''
   invoice_item_id: string | null
 }
 
@@ -49,14 +52,14 @@ export function InvoiceFormPage() {
   const { user } = useAuth()
   const { invoice, isLoading: loadingInvoice } = useInvoice(id ?? null)
   const { create, update, getNextNumber } = useInvoices()
-  const { sequence } = useInvoiceSequence(user?.id)
+  const { sequence, isLoading: loadingSequence } = useInvoiceSequence(user?.id)
   const { customers } = useCustomers()
   const { items } = useInvoiceItems()
   const [lines, setLines] = useState<LineRow[]>([])
   const [submitError, setSubmitError] = useState<string | null>(null)
   const initializedForId = useRef<string | null>(null)
 
-  const { register, handleSubmit, watch, reset, formState: { errors } } = useForm<FormData>({
+  const { register, handleSubmit, watch, reset, setValue, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema) as never,
     defaultValues: {
       status: 'draft',
@@ -68,10 +71,65 @@ export function InvoiceFormPage() {
       recurrence_every: 1,
       recurrence_unit: 'months',
       next_run_date: '',
+      number: undefined,
     },
   })
 
   const isRecurring = watch('is_recurring')
+  const watchedNumber = watch('number')
+  const isSentRecurring = !!(invoice && invoice.is_recurring && invoice.status === 'sent')
+  const parsedWatchedNumber =
+    typeof watchedNumber === 'number'
+      ? watchedNumber
+      : typeof watchedNumber === 'string' && watchedNumber !== ''
+        ? Number(watchedNumber)
+        : null
+
+  const currentInvoiceCounter =
+    parsedWatchedNumber != null && !Number.isNaN(parsedWatchedNumber)
+      ? parsedWatchedNumber
+      : id
+        ? invoice?.number ?? null
+        : (sequence?.counter ?? 0) + 1
+  const currentInvoiceDisplay =
+    sequence && currentInvoiceCounter != null ? formatInvoiceDisplay(sequence, currentInvoiceCounter) : null
+
+  const invoiceNumberControl = (() => {
+    if (id && isSentRecurring) {
+      return (
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Invoice Number</label>
+          <p className="text-gray-700 py-2">{invoice?.number_display ?? String(invoice?.number ?? '—')}</p>
+        </div>
+      )
+    }
+
+    if (!id && (loadingSequence || !sequence)) {
+      return <p className="text-sm text-gray-500">Loading invoice number…</p>
+    }
+
+    const minNumber = id ? (invoice?.number ?? 1) : (sequence?.counter ?? 0) + 1
+    return (
+      <>
+        <InlineInvoiceNumberInput
+          label="Invoice number"
+          type="number"
+          min={minNumber}
+          error={errors.number?.message}
+          prefixLabel={sequence?.prefix ?? ''}
+          digits={sequence?.length ?? 1}
+          suffixLabel={sequence?.suffix ?? ''}
+          {...register('number')}
+          value={watch('number') ?? ''}
+        />
+        {currentInvoiceDisplay && (
+          <p className="text-sm text-gray-500 mt-1">
+            Invoice Number: {currentInvoiceDisplay}
+          </p>
+        )}
+      </>
+    )
+  })()
 
   useEffect(() => {
     const locked = invoice && (invoice.status === 'paid' || invoice.status === 'cancelled' || (invoice.status === 'sent' && !invoice.is_recurring));
@@ -92,6 +150,7 @@ export function InvoiceFormPage() {
         recurrence_every: invoice.recurrence_every ?? 1,
         recurrence_unit: (invoice.recurrence_unit ?? 'months') as RecurrenceUnit,
         next_run_date: invoice.next_recurrence_at ? invoice.next_recurrence_at.slice(0, 10) : '',
+        number: invoice.number,
       })
       setLines(
         invoice.lines.map((l) => ({
@@ -104,6 +163,13 @@ export function InvoiceFormPage() {
       )
     }
   }, [invoice, reset])
+
+  useEffect(() => {
+    if (id) return
+    if (!sequence) return
+    if (watchedNumber != null) return
+    setValue('number', getNextInvoiceCounter(sequence))
+  }, [id, sequence, setValue, watchedNumber])
 
   const addLine = () => {
     setLines((prev) => [
@@ -147,10 +213,14 @@ export function InvoiceFormPage() {
       .map((l, i) => ({
         description: l.description,
         quantity: l.quantity,
-        unit_price: l.unit_price,
+        unit_price: typeof l.unit_price === 'number' ? l.unit_price : Number(l.unit_price || 0),
         sort_order: i,
         invoice_item_id: l.invoice_item_id,
       }))
+    if (linePayload.length === 0) {
+      setSubmitError('Add at least one line item with quantity > 0')
+      return
+    }
     const basePayload: Partial<Omit<Invoice, 'id' | 'created_at' | 'user_id' | 'updated_at'>> & {
       user_id: string
       customer_id: string
@@ -179,24 +249,88 @@ export function InvoiceFormPage() {
     }
     try {
       if (id) {
-        await update(id, basePayload, linePayload)
+        const existingNumber = invoice?.number ?? 0
+        const desiredNumber = data.number ?? existingNumber
+        if (desiredNumber <= 0 || !existingNumber) {
+          setSubmitError('Invalid invoice number')
+          return
+        }
+        if (isSentRecurring && desiredNumber !== existingNumber) {
+          setSubmitError('Invoice number cannot be changed for sent recurring invoices')
+          return
+        }
+        if (desiredNumber < existingNumber) {
+          setSubmitError('Invoice number can only be increased')
+          return
+        }
+
+        const number_display = formatInvoiceDisplay(sequence, desiredNumber)
+        await update(
+          id,
+          {
+            ...basePayload,
+            number: desiredNumber,
+            number_display,
+          },
+          linePayload
+        )
+
+        // Keep invoice sequence counter in sync so future invoices don't reuse this number.
+        const currentSequenceCounter = sequence?.counter ?? desiredNumber
+        const nextCounter = Math.max(currentSequenceCounter, desiredNumber)
+        const { error: seqErr } = await supabase
+          .from('invoice_sequences')
+          .update({ counter: nextCounter })
+          .eq('user_id', user.id)
+        if (seqErr) throw seqErr
         navigate(`/invoices/${id}`)
       } else {
-        const counter = await getNextNumber(user.id)
-        const prefix = sequence?.prefix ?? ''
-        const length = sequence?.length ?? 1
-        const suffix = sequence?.suffix ?? ''
-        const number_display = formatInvoiceNumber(prefix, length, suffix, counter)
+        const minAllowedNumber = (sequence?.counter ?? 0) + 1
+        const desiredNumber = data.number ?? null
+
+        let counter: number
+        const shouldSyncSequence = desiredNumber != null
+
+        if (desiredNumber != null) {
+          if (desiredNumber < minAllowedNumber) {
+            setSubmitError(`Invoice number must be at least ${minAllowedNumber}`)
+            return
+          }
+          counter = desiredNumber
+        } else {
+          counter = await getNextNumber(user.id)
+        }
+
+        const number_display = formatInvoiceDisplay(sequence, counter)
         const invPayload: Omit<Invoice, 'id' | 'created_at' | 'updated_at'> = {
           ...(basePayload as Omit<Invoice, 'id' | 'created_at' | 'updated_at'>),
           number: counter,
           number_display,
         }
         await create(invPayload, linePayload)
+
+        // Only advance the sequence counter after the invoice was actually created successfully.
+        if (shouldSyncSequence && desiredNumber != null) {
+          const nextCounter = Math.max(sequence?.counter ?? 0, desiredNumber)
+          const { error: seqErr } = await supabase
+            .from('invoice_sequences')
+            .update({ counter: nextCounter })
+            .eq('user_id', user.id)
+          if (seqErr) throw seqErr
+        }
+
         navigate('/invoices')
       }
     } catch (e) {
-      setSubmitError(e instanceof Error ? e.message : 'Failed to save')
+      const anyErr = e as { message?: string; code?: string } | null | undefined
+      const message = anyErr?.message ?? ''
+      const code = anyErr?.code
+
+      if (code === '23505' || message.toLowerCase().includes('duplicate')) {
+        setSubmitError('An invoice with this number already exists')
+      } else {
+        setSubmitError(anyErr instanceof Error ? anyErr.message : 'Failed to save')
+      }
     }
   }
 
@@ -217,12 +351,7 @@ export function InvoiceFormPage() {
               <p className="text-sm text-red-600 bg-red-50 p-2 rounded-lg">{submitError}</p>
             )}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Invoice number</label>
-              <p className="text-gray-700 py-2">
-                {id
-                  ? (invoice?.number_display ?? String(invoice?.number ?? '—'))
-                  : `Next: ${formatInvoiceNumber(sequence?.prefix ?? '', sequence?.length ?? 1, sequence?.suffix ?? '', (sequence?.counter ?? 0) + 1)}`}
-              </p>
+              {invoiceNumberControl}
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Customer</label>
@@ -321,7 +450,10 @@ export function InvoiceFormPage() {
                         step={0.01}
                         className="w-20 px-2 py-1.5 border-0 focus:ring-0 focus:outline-none text-sm"
                         value={line.unit_price}
-                        onChange={(e) => updateLine(line.id, 'unit_price', Number(e.target.value))}
+                        onChange={(e) => {
+                          const next = e.target.value
+                          updateLine(line.id, 'unit_price', next === '' ? '' : Number(next))
+                        }}
                       />
                     </div>
                     <Button type="button" variant="ghost" size="sm" onClick={() => removeLine(line.id)}>×</Button>

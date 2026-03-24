@@ -18,9 +18,30 @@ function formatPdfDate(isoDate: string): string {
   return new Date(y, m - 1, d).toLocaleDateString();
 }
 
+const MAX_MESSAGE_LENGTH = 10_000;
+
 interface ReqBody {
   invoiceId: string;
   to?: string;
+  message?: string;
+}
+
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function plainTextToEmailHtml(text: string, invNumber: string): string {
+  const trimmed = text.trim();
+  if (!trimmed) {
+    return `<p>Please find your invoice #${escapeHtml(invNumber)} attached.</p>`;
+  }
+  const escaped = escapeHtml(trimmed);
+  const withBreaks = escaped.replace(/\r\n|\r|\n/g, "<br>");
+  return `<p>${withBreaks}</p>`;
 }
 
 function jsonResponse(body: object, status: number) {
@@ -47,9 +68,12 @@ Deno.serve(async (req: Request) => {
       return jsonResponse({ error: "Unauthorized" }, 401);
     }
     const body = (await req.json()) as ReqBody;
-    const { invoiceId, to } = body;
+    const { invoiceId, to, message } = body;
     if (!invoiceId) {
       return jsonResponse({ error: "Invoice ID is required" }, 400);
+    }
+    if (typeof message === "string" && message.length > MAX_MESSAGE_LENGTH) {
+      return jsonResponse({ error: `Message must be at most ${MAX_MESSAGE_LENGTH} characters` }, 400);
     }
     const { data: inv, error: invErr } = await supabase
       .from("invoices")
@@ -99,6 +123,8 @@ Deno.serve(async (req: Request) => {
       taxValue,
     });
     const base64Pdf = encodeBase64(pdfBytes);
+    const messageText = typeof message === "string" ? message : "";
+    const htmlBody = plainTextToEmailHtml(messageText, invNumber);
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
@@ -109,7 +135,7 @@ Deno.serve(async (req: Request) => {
         from: FROM_EMAIL,
         to: [toEmail],
         subject: senderName ? `Invoice #${invNumber} - from ${senderName}` : `Invoice #${invNumber}`,
-        html: `<p>Please find your invoice #${invNumber} attached.</p>`,
+        html: htmlBody,
         attachments: [{ filename: `invoice-${invNumber}.pdf`, content: base64Pdf }],
       }),
     });

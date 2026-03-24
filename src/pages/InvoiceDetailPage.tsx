@@ -8,6 +8,7 @@ import { Button } from '../components/ui/Button'
 import { Card, CardContent, CardHeader } from '../components/ui/Card'
 import { Modal } from '../components/ui/Modal'
 import { Input } from '../components/ui/Input'
+import { Textarea } from '../components/ui/Textarea'
 import { formatDate } from '../lib/format'
 import { buildInvoicePdf } from '../../supabase/functions/_shared/invoice-pdf'
 import { recurrenceLabel } from '../lib/recurrence'
@@ -41,6 +42,7 @@ export function InvoiceDetailPage() {
   const [sendResult, setSendResult] = useState<{ ok: boolean; message: string } | null>(null)
   const [sendDialogOpen, setSendDialogOpen] = useState(false)
   const [sendToEmail, setSendToEmail] = useState('')
+  const [sendEmailMessage, setSendEmailMessage] = useState('')
   const [markAsSentDialogOpen, setMarkAsSentDialogOpen] = useState(false)
   const [markingAsSent, setMarkingAsSent] = useState(false)
   const [stopping, setStopping] = useState(false)
@@ -93,6 +95,7 @@ export function InvoiceDetailPage() {
 
   const openSendDialog = () => {
     setSendToEmail(invoice?.customer?.email ?? '')
+    setSendEmailMessage('')
     setSendResult(null)
     setSendDialogOpen(true)
   }
@@ -103,7 +106,11 @@ export function InvoiceDetailPage() {
     setSendResult(null)
     setSendDialogOpen(false)
     const { data, error } = await supabase.functions.invoke('send-invoice-email', {
-      body: { invoiceId: id, to: sendToEmail.trim() },
+      body: {
+        invoiceId: id,
+        to: sendToEmail.trim(),
+        ...(sendEmailMessage.trim() ? { message: sendEmailMessage.trim() } : {}),
+      },
     })
     setSending(false)
     if (error) {
@@ -215,6 +222,13 @@ export function InvoiceDetailPage() {
             value={sendToEmail}
             onChange={(e) => setSendToEmail(e.target.value)}
             placeholder="customer@example.com"
+          />
+          <Textarea
+            label="Message (optional)"
+            value={sendEmailMessage}
+            onChange={(e) => setSendEmailMessage(e.target.value)}
+            placeholder="Add a note for your customer…"
+            rows={4}
           />
           <div className="flex justify-end gap-2">
             <Button variant="ghost" onClick={() => setSendDialogOpen(false)}>Cancel</Button>

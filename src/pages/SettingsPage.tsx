@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import type { User } from '@supabase/supabase-js'
 import { useAuth } from '../contexts/AuthContext'
 import { useProfileContext } from '../contexts/ProfileContext'
 import { useForm } from 'react-hook-form'
@@ -33,8 +34,26 @@ type ProfileForm = z.infer<typeof profileSchema>
 type PasswordForm = z.infer<typeof passwordSchema>
 type SequenceForm = z.infer<typeof sequenceSchema>
 
+const PROVIDER_LABEL: Record<string, string> = {
+  google: 'Google',
+  email: 'Email and password',
+}
+
+function signInMethodLabels(identities: { provider: string }[] | undefined): string[] {
+  if (!identities?.length) return []
+  const seen = new Set<string>()
+  const out: string[] = []
+  for (const i of identities) {
+    if (seen.has(i.provider)) continue
+    seen.add(i.provider)
+    out.push(PROVIDER_LABEL[i.provider] ?? i.provider)
+  }
+  return out
+}
+
 export function SettingsPage() {
   const { user } = useAuth()
+  const [resolvedUser, setResolvedUser] = useState<User | null>(null)
   const { profile, update: updateProfile } = useProfileContext()
   const { sequence, isLoading: sequenceLoading, updateSequence } = useInvoiceSequence(user?.id)
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
@@ -55,6 +74,27 @@ export function SettingsPage() {
     resolver: zodResolver(sequenceSchema) as Resolver<SequenceForm>,
     defaultValues: { prefix: '', suffix: '', length: 1 },
   })
+
+  useEffect(() => {
+    if (!user) {
+      setResolvedUser(null)
+      return
+    }
+    let cancelled = false
+    void supabase.auth.getUser().then(({ data: { user: u } }) => {
+      if (!cancelled && u) setResolvedUser(u)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [user?.id])
+
+  const accountUser = resolvedUser ?? user
+  const identities = accountUser?.identities ?? []
+  const hasGoogle = identities.some((i) => i.provider === 'google')
+  const hasEmailPassword = identities.some((i) => i.provider === 'email')
+  const methodLabels = signInMethodLabels(identities)
+  const methodsPending = Boolean(user && !resolvedUser && methodLabels.length === 0)
 
   useEffect(() => {
     if (profile) {
@@ -135,6 +175,67 @@ export function SettingsPage() {
       <h2 className="text-lg font-semibold text-gray-900">Settings</h2>
       <Card>
         <CardHeader>
+          <h3 className="font-medium text-gray-900">Account</h3>
+        </CardHeader>
+        <CardContent className="space-y-3 text-sm text-gray-700">
+          {accountUser?.email && (
+            <p>
+              <span className="text-gray-500">Email</span>
+              <br />
+              <span className="font-medium text-gray-900">{accountUser.email}</span>
+            </p>
+          )}
+          <div>
+            <p className="text-gray-500 mb-1">Sign-in</p>
+            {methodsPending ? (
+              <p className="text-gray-600">Loading sign-in methods…</p>
+            ) : methodLabels.length > 0 ? (
+              <ul className="list-disc list-inside space-y-0.5 text-gray-900">
+                {methodLabels.map((label) => (
+                  <li key={label}>{label}</li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-gray-600">—</p>
+            )}
+          </div>
+          {hasGoogle && (
+            <p className="text-xs text-gray-500 pt-1 border-t border-gray-100">
+              This account uses Google to sign in. Manage your Google account at{' '}
+              <a href="https://myaccount.google.com" className="text-gray-800 underline hover:no-underline" target="_blank" rel="noopener noreferrer">
+                myaccount.google.com
+              </a>
+              .
+            </p>
+          )}
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader>
+          <h3 className="font-medium text-gray-900">Password</h3>
+        </CardHeader>
+        <CardContent>
+          {hasEmailPassword ? (
+            <form onSubmit={passwordForm.handleSubmit(onPasswordSubmit)} className="space-y-4">
+              {message && (
+                <p className={`text-sm p-2 rounded-lg ${message.type === 'success' ? 'text-green-700 bg-green-50' : 'text-red-600 bg-red-50'}`}>
+                  {message.text}
+                </p>
+              )}
+              <Input label="New password" type="password" autoComplete="new-password" error={passwordForm.formState.errors.password?.message} {...passwordForm.register('password')} />
+              <Button type="submit" size="sm" disabled={loading}>{loading ? 'Updating…' : 'Update password'}</Button>
+            </form>
+          ) : (
+            hasGoogle && (
+              <p className="text-sm text-gray-600">
+                You signed in with Google only. There is no password to change for this app.
+              </p>
+            )
+          )}
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader>
           <h3 className="font-medium text-gray-900">Profile</h3>
         </CardHeader>
         <CardContent>
@@ -175,22 +276,6 @@ export function SettingsPage() {
             <Button type="submit" size="sm" disabled={sequenceSaving || sequenceLoading}>
               {sequenceSaving ? 'Saving…' : 'Save format'}
             </Button>
-          </form>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader>
-          <h3 className="font-medium text-gray-900">Change password</h3>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={passwordForm.handleSubmit(onPasswordSubmit)} className="space-y-4">
-            {message && (
-              <p className={`text-sm p-2 rounded-lg ${message.type === 'success' ? 'text-green-700 bg-green-50' : 'text-red-600 bg-red-50'}`}>
-                {message.text}
-              </p>
-            )}
-            <Input label="New password" type="password" autoComplete="new-password" error={passwordForm.formState.errors.password?.message} {...passwordForm.register('password')} />
-            <Button type="submit" size="sm" disabled={loading}>{loading ? 'Updating…' : 'Update password'}</Button>
           </form>
         </CardContent>
       </Card>

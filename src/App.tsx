@@ -15,6 +15,9 @@ import { CustomerFormPage } from './pages/CustomerFormPage'
 import { ItemsPage } from './pages/ItemsPage'
 import { ItemFormPage } from './pages/ItemFormPage'
 import { SettingsPage } from './pages/SettingsPage'
+import { PrivacyPage } from './pages/PrivacyPage'
+import { TermsPage } from './pages/TermsPage'
+import { PublicLegalWrapper } from './pages/PublicLegalWrapper'
 import { NotFoundPage } from './pages/NotFoundPage'
 
 function App() {
@@ -26,6 +29,22 @@ function App() {
           <Route path="/signup" element={<SignUp />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
+          <Route
+            path="/privacy"
+            element={
+              <PublicLegalWrapper>
+                <PrivacyPage />
+              </PublicLegalWrapper>
+            }
+          />
+          <Route
+            path="/terms"
+            element={
+              <PublicLegalWrapper>
+                <TermsPage />
+              </PublicLegalWrapper>
+            }
+          />
           <Route
             path="/"
             element={

@@ -1,4 +1,4 @@
-import { Outlet, useNavigate } from 'react-router-dom'
+import { Link, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { useProfileContext } from '../../contexts/ProfileContext'
 import { Button } from '../ui/Button'
@@ -84,8 +84,20 @@ export function AppLayout() {
         <header className="md:hidden sticky top-0 z-10 bg-white border-b border-gray-200 px-4 py-3">
           <h1 className="text-lg font-semibold text-gray-900">Send Invoices Online</h1>
         </header>
-        <main className="flex-1 p-4 pb-24 md:pb-4 md:px-6">
-          <Outlet />
+        <main className="flex-1 flex flex-col min-h-0 p-4 pb-24 md:pb-4 md:px-6">
+          <div className="flex-1 min-h-0">
+            <Outlet />
+          </div>
+          <footer className="mt-auto shrink-0 pt-6 border-t border-gray-100">
+            <nav className="flex flex-wrap justify-center gap-x-3 gap-y-1 text-xs text-gray-500">
+              <Link to="/privacy" className="hover:text-gray-800 underline">
+                Privacy
+              </Link>
+              <Link to="/terms" className="hover:text-gray-800 underline">
+                Terms
+              </Link>
+            </nav>
+          </footer>
         </main>
         <div className="fixed bottom-0 left-0 right-0 md:hidden bg-white border-t border-gray-200 safe-area-pb">
           <div className="px-3 py-2 flex items-center justify-between gap-2 border-b border-gray-100">

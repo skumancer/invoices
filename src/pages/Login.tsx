@@ -145,6 +145,15 @@ export function Login() {
             <Link to="/forgot-password" className="block font-medium text-gray-900 hover:underline">Forgot password?</Link>
             No account? <Link to="/signup" className="font-medium text-gray-900 hover:underline">Sign up</Link>
           </p>
+          <p className="mt-4 text-center text-xs text-gray-500">
+            <Link to="/privacy" className="underline hover:text-gray-800">
+              Privacy
+            </Link>
+            <span className="mx-2">·</span>
+            <Link to="/terms" className="underline hover:text-gray-800">
+              Terms
+            </Link>
+          </p>
         </CardContent>
       </Card>
     </div>

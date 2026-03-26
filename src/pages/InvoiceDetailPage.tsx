@@ -1,5 +1,5 @@
 import { useParams, Link } from 'react-router-dom'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { useInvoice } from '../hooks/useInvoices'
 import { useProfile } from '../hooks/useProfile'
@@ -43,6 +43,7 @@ export function InvoiceDetailPage() {
   const [sendDialogOpen, setSendDialogOpen] = useState(false)
   const [sendToEmail, setSendToEmail] = useState('')
   const [sendEmailMessage, setSendEmailMessage] = useState('')
+  const sendMessageRef = useRef<HTMLTextAreaElement | null>(null)
   const [markAsSentDialogOpen, setMarkAsSentDialogOpen] = useState(false)
   const [markingAsSent, setMarkingAsSent] = useState(false)
   const [stopping, setStopping] = useState(false)
@@ -100,6 +101,7 @@ export function InvoiceDetailPage() {
 
   const handleSendEmail = async () => {
     if (!id || !sendToEmail.trim()) return
+    const message = sendMessageRef.current?.value ?? sendEmailMessage
     setSending(true)
     setSendResult(null)
     setSendDialogOpen(false)
@@ -107,7 +109,7 @@ export function InvoiceDetailPage() {
       body: {
         invoiceId: id,
         to: sendToEmail.trim(),
-        ...(sendEmailMessage.trim() ? { message: sendEmailMessage.trim() } : {}),
+        message,
       },
     })
     setSending(false)
@@ -225,6 +227,7 @@ export function InvoiceDetailPage() {
           />
           <Textarea
             label="Message (optional)"
+            ref={sendMessageRef}
             value={sendEmailMessage}
             onChange={(e) => setSendEmailMessage(e.target.value)}
             placeholder="Add a note for your customer…"

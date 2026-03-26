@@ -47,8 +47,8 @@ export function AppLayout() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col md:flex-row bg-gray-50">
-      <aside className="hidden md:flex md:w-52 md:flex-col md:fixed md:inset-y-0 md:left-0 bg-white border-r border-gray-200">
+    <div className="min-h-screen flex flex-col md:flex-row bg-gray-50 print:bg-white">
+      <aside className="hidden md:flex md:w-52 md:flex-col md:fixed md:inset-y-0 md:left-0 bg-white border-r border-gray-200 print:hidden">
         <div className="p-4 border-b border-gray-100">
           <h1 className="text-lg font-semibold text-gray-900">Send Invoices Online</h1>
         </div>
@@ -80,15 +80,15 @@ export function AppLayout() {
           </div>
         </div>
       </aside>
-      <div className="md:pl-52 flex-1 flex flex-col min-h-screen">
-        <header className="md:hidden sticky top-0 z-10 bg-white border-b border-gray-200 px-4 py-3">
+      <div className="md:pl-52 flex-1 flex flex-col min-h-screen print:pl-0">
+        <header className="md:hidden sticky top-0 z-10 bg-white border-b border-gray-200 px-4 py-3 print:hidden">
           <h1 className="text-lg font-semibold text-gray-900">Send Invoices Online</h1>
         </header>
-        <main className="flex-1 flex flex-col min-h-0 p-4 pb-24 md:pb-4 md:px-6">
+        <main className="flex-1 flex flex-col min-h-0 p-4 pb-24 md:pb-4 md:px-6 print:py-6 print:px-6 print:pb-6">
           <div className="flex-1 min-h-0">
             <Outlet />
           </div>
-          <footer className="mt-auto shrink-0 pt-6 border-t border-gray-100">
+          <footer className="mt-auto shrink-0 pt-6 border-t border-gray-100 print:hidden">
             <nav className="flex flex-wrap justify-center gap-x-3 gap-y-1 text-xs text-gray-500">
               <Link to="/privacy" className="hover:text-gray-800 underline">
                 Privacy
@@ -99,7 +99,7 @@ export function AppLayout() {
             </nav>
           </footer>
         </main>
-        <div className="fixed bottom-0 left-0 right-0 md:hidden bg-white border-t border-gray-200 safe-area-pb">
+        <div className="fixed bottom-0 left-0 right-0 md:hidden bg-white border-t border-gray-200 safe-area-pb print:hidden">
           <div className="px-3 py-2 flex items-center justify-between gap-2 border-b border-gray-100">
             <p className="text-xs text-gray-500 truncate flex-1 min-w-0" title={displayName}>
               {displayName || 'Account'}

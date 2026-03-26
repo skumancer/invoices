@@ -28,7 +28,7 @@ export function Modal({ open, onClose, title, children, size = 'md' }: ModalProp
   const sizeClass = size === 'sm' ? 'max-w-sm' : size === 'lg' ? 'max-w-2xl' : 'max-w-md'
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 print:hidden" onClick={onClose}>
       <div
         className={`bg-white rounded-xl shadow-lg w-full ${sizeClass} max-h-[90vh] flex flex-col`}
         onClick={(e) => e.stopPropagation()}

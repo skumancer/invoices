@@ -1,5 +1,5 @@
 import { useParams, Link } from 'react-router-dom'
-import { useState, useRef } from 'react'
+import { useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { useInvoice } from '../hooks/useInvoices'
 import { useProfile } from '../hooks/useProfile'
@@ -10,7 +10,7 @@ import { Modal } from '../components/ui/Modal'
 import { Input } from '../components/ui/Input'
 import { Textarea } from '../components/ui/Textarea'
 import { formatDate } from '../lib/format'
-import { buildInvoicePdf } from '../../supabase/functions/_shared/invoice-pdf'
+import { buildInvoicePdf, INVOICE_BRANDING_LINE } from '../../supabase/functions/_shared/invoice-pdf'
 import { recurrenceLabel } from '../lib/recurrence'
 import { statusColors } from '../lib/invoice-status'
 
@@ -47,8 +47,6 @@ export function InvoiceDetailPage() {
   const [markingAsSent, setMarkingAsSent] = useState(false)
   const [stopping, setStopping] = useState(false)
   const [stopError, setStopError] = useState<string | null>(null)
-  const printRef = useRef<HTMLDivElement>(null)
-
   const handleDownloadPdf = async () => {
     if (!invoice) return
     try {
@@ -183,7 +181,7 @@ export function InvoiceDetailPage() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-lg font-semibold text-gray-900">Invoice #{invoice.number_display ?? invoice.number}</h2>
-        <div className="flex gap-2">
+        <div className="flex gap-2 print:hidden">
           <Button variant="secondary" size="sm" onClick={() => window.print()}>
             Print
           </Button>
@@ -211,9 +209,11 @@ export function InvoiceDetailPage() {
         </div>
       </div>
       {sendResult && (
-        <p className={sendResult.ok ? 'text-green-700 text-sm' : 'text-red-600 text-sm'}>{sendResult.message}</p>
+        <p className={`print:hidden ${sendResult.ok ? 'text-green-700 text-sm' : 'text-red-600 text-sm'}`} >
+          {sendResult.message}
+        </p>
       )}
-      {stopError && <p className="text-red-600 text-sm">{stopError}</p>}
+      {stopError && <p className="text-red-600 text-sm print:hidden">{stopError}</p>}
       <Modal open={sendDialogOpen} onClose={() => setSendDialogOpen(false)} title="Send invoice by email">
         <div className="space-y-4">
           <Input
@@ -255,29 +255,29 @@ export function InvoiceDetailPage() {
           </div>
         </div>
       </Modal>
-      <div ref={printRef}>
+      <div>
         <Card className="print:shadow-none print:border">
           <CardHeader className="flex flex-row justify-between items-start gap-4">
             <div>
               <p className="text-sm text-gray-500 mb-1">From: {senderLabel(profile, user?.email)}</p>
-            {user?.email && <p className="text-sm text-gray-600">{user.email}</p>}
-            {profile?.tax_id?.trim() && <p className="text-sm text-gray-600">Tax ID: {profile.tax_id.trim()}</p>}
-            <p className="font-medium text-gray-900 mt-2">{customer?.name ?? '—'}</p>
-            {customer?.email && <p className="text-sm text-gray-600">{customer.email}</p>}
-            {customer?.tax_id?.trim() && <p className="text-sm text-gray-600">Tax ID: {customer.tax_id.trim()}</p>}
-            <p className="text-sm text-gray-500">
-              Issue: {formatDate(invoice.issue_date)} · Due: {formatDate(invoice.due_date)}
-            </p>
-            {invoice.is_recurring && (
-              <p className="text-sm text-gray-600 mt-1">
-                {recurrenceLabel(invoice.recurrence_every, invoice.recurrence_unit)}
-                {invoice.next_recurrence_at && (
-                  <> · Next: {formatDate(invoice.next_recurrence_at)}</>
-                )}
+              {user?.email && <p className="text-sm text-gray-600">{user.email}</p>}
+              {profile?.tax_id?.trim() && <p className="text-sm text-gray-600">Tax ID: {profile.tax_id.trim()}</p>}
+              <p className="font-medium text-gray-900 mt-2">{customer?.name ?? '—'}</p>
+              {customer?.email && <p className="text-sm text-gray-600">{customer.email}</p>}
+              {customer?.tax_id?.trim() && <p className="text-sm text-gray-600">Tax ID: {customer.tax_id.trim()}</p>}
+              <p className="text-sm text-gray-500">
+                Issue: {formatDate(invoice.issue_date)} · Due: {formatDate(invoice.due_date)}
               </p>
-            )}
+              {invoice.is_recurring && (
+                <p className="text-sm text-gray-600 mt-1 print:hidden">
+                  {recurrenceLabel(invoice.recurrence_every, invoice.recurrence_unit)}
+                  {invoice.next_recurrence_at && (
+                    <> · Next: {formatDate(invoice.next_recurrence_at)}</>
+                  )}
+                </p>
+              )}
             </div>
-            <span className={`px-2 py-0.5 rounded-full text-xs font-medium capitalize shrink-0 print:inline ${statusColors[invoice.status]}`}>
+            <span className={`px-2 py-0.5 rounded-full text-xs font-medium capitalize shrink-0 print:hidden ${statusColors[invoice.status]}`}>
               {invoice.status}
             </span>
           </CardHeader>
@@ -313,6 +313,9 @@ export function InvoiceDetailPage() {
             </div>
           </CardContent>
         </Card>
+        <p className="hidden text-center text-xs text-gray-500 print:fixed print:bottom-6 print:left-0 print:right-0 print:block">
+          {INVOICE_BRANDING_LINE}
+        </p>
       </div>
     </div>
   )

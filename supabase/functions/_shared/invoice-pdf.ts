@@ -6,6 +6,9 @@ const MARGIN_RIGHT = 20;
 const PAGE_WIDTH = 210;
 const TABLE_WIDTH = 180;
 
+/** Footer line for PDFs and matching browser printouts */
+export const INVOICE_BRANDING_LINE = "Created with send-invoices.online";
+
 export interface BuildInvoicePdfParams {
   invNumber: string;
   fromLabel: string;
@@ -122,6 +125,15 @@ export function buildInvoicePdf(params: BuildInvoicePdfParams): Uint8Array {
   doc.setFont("helvetica", "bold");
   doc.text("Total:", labelX, y);
   doc.text(`$${params.total.toFixed(2)}`, amountX, y, { align: "right" });
+
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const pageWidth = doc.internal.pageSize.getWidth();
+  doc.setPage(doc.getNumberOfPages());
+  doc.setFontSize(8);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(120, 120, 120);
+  doc.text(INVOICE_BRANDING_LINE, pageWidth / 2, pageHeight - 14, { align: "center" });
+
   const arrayBuffer = doc.output("arraybuffer");
   return new Uint8Array(arrayBuffer);
 }

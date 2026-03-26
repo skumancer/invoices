@@ -92,10 +92,23 @@ export function Login() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-gray-50">
+    <div className="min-h-screen flex flex-col items-center justify-center gap-8 p-4 bg-gray-50">
+      <header className="text-center max-w-sm space-y-3">
+        <img
+          src="/send-invoices-icon.png"
+          alt=""
+          width="200"
+          height="auto"
+          className="mx-auto rounded-2xl shadow-sm ring-1 ring-gray-200/80"
+        />
+        <h1 className="text-xl font-semibold text-gray-900">Send Invoices Online</h1>
+        <p className="text-sm text-gray-600 leading-relaxed">
+          Create invoices, manage customers and items, and email them from one simple place. Simple, no ads, no tracking.
+        </p>
+      </header>
       <Card className="w-full max-w-sm">
         <CardHeader>
-          <h1 className="text-xl font-semibold text-gray-900">Sign in</h1>
+          <h2 className="text-xl font-semibold text-gray-900">Sign in</h2>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">

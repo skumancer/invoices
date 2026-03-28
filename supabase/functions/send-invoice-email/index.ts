@@ -37,7 +37,7 @@ function escapeHtml(s: string): string {
 function plainTextToEmailHtml(text: string, invNumber: string): string {
   const trimmed = text.trim();
   if (!trimmed) {
-    return `<p>Please find your invoice #${escapeHtml(invNumber)} attached.</p>`;
+    return `<p>Please find your invoice ${escapeHtml(invNumber)} attached.</p>`;
   }
   const escaped = escapeHtml(trimmed);
   const withBreaks = escaped.replace(/\r\n|\r|\n/g, "<br>");
@@ -60,6 +60,11 @@ Deno.serve(async (req: Request) => {
     if (!authHeader) {
       return jsonResponse({ error: "Missing Authorization" }, 401);
     }
+
+    if (!RESEND_API_KEY) {
+      return jsonResponse({ error: "Email service is not configured. Please contact support." }, 500);
+    }
+
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
@@ -67,36 +72,45 @@ Deno.serve(async (req: Request) => {
     if (userError || !user) {
       return jsonResponse({ error: "Unauthorized" }, 401);
     }
+
     const body = (await req.json()) as ReqBody;
     const { invoiceId, to, message } = body;
     if (!invoiceId) {
       return jsonResponse({ error: "Invoice ID is required" }, 400);
     }
+
     if (typeof message === "string" && message.length > MAX_MESSAGE_LENGTH) {
       return jsonResponse({ error: `Message must be at most ${MAX_MESSAGE_LENGTH} characters` }, 400);
     }
+
     const { data: inv, error: invErr } = await supabase
       .from("invoices")
       .select("*, customer:customers(*)")
       .eq("id", invoiceId)
       .eq("user_id", user.id)
       .single();
+
     if (invErr || !inv) {
       return jsonResponse({ error: "Invoice not found" }, 404);
     }
+
     const { data: profile } = await supabase.from("profiles").select("first_name, last_name, tax_id").eq("id", user.id).maybeSingle();
     const first = (profile as { first_name?: string | null } | null)?.first_name?.trim() ?? "";
     const last = (profile as { last_name?: string | null } | null)?.last_name?.trim() ?? "";
     const senderName = [first, last].filter(Boolean).join(" ") || user.email;
+
     const { data: lines } = await supabase.from("invoice_lines").select("*").eq("invoice_id", invoiceId).order("sort_order");
     const customer = (inv as { customer?: { email?: string; name?: string; tax_id?: string | null } }).customer;
-    const toEmail = to ?? customer?.email;
+
+    if (!customer) {
+      return jsonResponse({ error: "Customer not found" }, 404);
+    }
+
+    const toEmail = to ?? customer.email;
     if (!toEmail) {
       return jsonResponse({ error: "No recipient email address" }, 400);
     }
-    if (!RESEND_API_KEY) {
-      return jsonResponse({ error: "Email service is not configured. Please contact support." }, 500);
-    }
+
     const subtotal = (lines ?? []).reduce((s: number, l: { quantity: number; unit_price: number }) => s + l.quantity * l.unit_price, 0);
     const taxType = (inv as { tax_type?: "fixed" | "percent" | null }).tax_type ?? null;
     const taxValue = Number((inv as { tax_value?: number }).tax_value ?? 0);
@@ -107,11 +121,11 @@ Deno.serve(async (req: Request) => {
     const toTaxId = customer?.tax_id?.trim() || null;
     const pdfBytes = buildInvoicePdf({
       invNumber,
-      fromLabel: senderName || "—",
-      fromEmail: user.email ?? "",
+      fromLabel: senderName,
+      fromEmail: user.email,
       fromTaxId: fromTaxId || null,
-      toName: customer?.name ?? "—",
-      toEmail: customer?.email ?? "",
+      toName: customer.name,
+      toEmail: customer.email,
       toTaxId: toTaxId || null,
       issueDate: formatPdfDate(inv.issue_date),
       dueDate: formatPdfDate(inv.due_date),
@@ -122,6 +136,7 @@ Deno.serve(async (req: Request) => {
       taxType,
       taxValue,
     });
+
     const base64Pdf = encodeBase64(pdfBytes);
     const messageText = typeof message === "string" ? message : "";
     const htmlBody = plainTextToEmailHtml(messageText, invNumber);
@@ -134,15 +149,18 @@ Deno.serve(async (req: Request) => {
       body: JSON.stringify({
         from: FROM_EMAIL,
         to: [toEmail],
-        subject: senderName ? `Invoice #${invNumber} - from ${senderName}` : `Invoice #${invNumber}`,
+        reply_to: user.email,
+        subject: `Invoice ${invNumber} - from ${senderName}`,
         html: htmlBody,
         attachments: [{ filename: `invoice-${invNumber}.pdf`, content: base64Pdf }],
       }),
     });
+
     const data = await res.json();
     if (!res.ok) {
       return jsonResponse({ error: data.message ?? "Email provider error. Please try again later." }, 502);
     }
+
     return jsonResponse({ message: "Email sent.", id: data.id }, 200);
   } catch (e) {
     return jsonResponse({ error: "An unexpected error occurred. Please try again." }, 500);

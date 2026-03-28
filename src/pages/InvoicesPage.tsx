@@ -34,7 +34,7 @@ export function InvoicesPage() {
                   <CardContent className="p-4 flex flex-row items-center justify-between gap-4">
                     <div className="min-w-0 flex-1">
                       <p className="font-medium text-gray-900">
-                        #{inv.number_display ?? inv.number} · {customer?.name ?? '—'}
+                        {inv.number_display ?? inv.number} · {customer?.name ?? '—'}
                       </p>
                       <p className="text-sm text-gray-500">
                         {recurrenceLabel(inv.recurrence_every, inv.recurrence_unit)}
@@ -62,7 +62,7 @@ export function InvoicesPage() {
               <Card className="hover:border-gray-300 transition-colors">
                 <CardContent className="p-4 flex flex-row items-center justify-between gap-4">
                   <div className="min-w-0 flex-1">
-                    <p className="font-medium text-gray-900">#{inv.number_display ?? inv.number} · {customer?.name ?? '—'}</p>
+                    <p className="font-medium text-gray-900">{inv.number_display ?? inv.number} · {customer?.name ?? '—'}</p>
                     <p className="text-sm text-gray-500">
                       Due {formatDate(inv.due_date)} · Issue {formatDate(inv.issue_date)}
                     </p>

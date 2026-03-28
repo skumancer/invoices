@@ -39,7 +39,7 @@ export function buildInvoicePdf(params: BuildInvoicePdfParams): Uint8Array {
   doc.setFontSize(18);
   doc.text("INVOICE", MARGIN_LEFT, y);
   doc.setFontSize(16);
-  doc.text(`#${params.invNumber}`, PAGE_WIDTH - MARGIN_RIGHT, y, { align: "right" });
+  doc.text(`${params.invNumber}`, PAGE_WIDTH - MARGIN_RIGHT, y, { align: "right" });
   doc.setFontSize(10);
   y += 8;
   doc.setFont("helvetica", "bold");

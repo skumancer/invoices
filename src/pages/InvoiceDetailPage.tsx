@@ -182,7 +182,7 @@ export function InvoiceDetailPage() {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-lg font-semibold text-gray-900">Invoice #{invoice.number_display ?? invoice.number}</h2>
+        <h2 className="text-lg font-semibold text-gray-900">Invoice - {invoice.number_display ?? invoice.number}</h2>
         <div className="flex gap-2 print:hidden">
           <Button variant="secondary" size="sm" onClick={() => window.print()}>
             Print

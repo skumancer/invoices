@@ -249,41 +249,44 @@ export function InvoiceFormPage() {
     }
     try {
       if (id) {
-        const existingNumber = invoice?.number ?? 0
-        const desiredNumber = data.number ?? existingNumber
-        if (desiredNumber <= 0 || !existingNumber) {
-          setSubmitError('Invalid invoice number')
-          return
-        }
-        if (isSentRecurring && desiredNumber !== existingNumber) {
-          setSubmitError('Invoice number cannot be changed for sent recurring invoices')
-          return
-        }
-        if (desiredNumber < existingNumber) {
-          setSubmitError('Invoice number can only be increased')
-          return
-        }
+        // Sent invoices are immutable for number/display — never re-send those columns or sequence
+        // would reformat from current settings (e.g. only editing next recurrence).
+        if (invoice?.status === 'sent') {
+          await update(id, basePayload, linePayload)
+          navigate(`/invoices/${id}`)
+        } else {
+          const existingNumber = invoice?.number ?? 0
+          const desiredNumber = data.number ?? existingNumber
+          if (desiredNumber <= 0 || !existingNumber) {
+            setSubmitError('Invalid invoice number')
+            return
+          }
+          if (desiredNumber < existingNumber) {
+            setSubmitError('Invoice number can only be increased')
+            return
+          }
 
-        const number_display = formatInvoiceDisplay(sequence, desiredNumber)
-        await update(
-          id,
-          {
-            ...basePayload,
-            number: desiredNumber,
-            number_display,
-          },
-          linePayload
-        )
+          const number_display = formatInvoiceDisplay(sequence, desiredNumber)
+          await update(
+            id,
+            {
+              ...basePayload,
+              number: desiredNumber,
+              number_display,
+            },
+            linePayload
+          )
 
-        // Keep invoice sequence counter in sync so future invoices don't reuse this number.
-        const currentSequenceCounter = sequence?.counter ?? desiredNumber
-        const nextCounter = Math.max(currentSequenceCounter, desiredNumber)
-        const { error: seqErr } = await supabase
-          .from('invoice_sequences')
-          .update({ counter: nextCounter })
-          .eq('user_id', user.id)
-        if (seqErr) throw seqErr
-        navigate(`/invoices/${id}`)
+          // Keep invoice sequence counter in sync so future invoices don't reuse this number.
+          const currentSequenceCounter = sequence?.counter ?? desiredNumber
+          const nextCounter = Math.max(currentSequenceCounter, desiredNumber)
+          const { error: seqErr } = await supabase
+            .from('invoice_sequences')
+            .update({ counter: nextCounter })
+            .eq('user_id', user.id)
+          if (seqErr) throw seqErr
+          navigate(`/invoices/${id}`)
+        }
       } else {
         const minAllowedNumber = (sequence?.counter ?? 0) + 1
         const desiredNumber = data.number ?? null

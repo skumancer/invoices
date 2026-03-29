@@ -1,18 +1,24 @@
-import { useParams, Link } from 'react-router-dom'
-import { useRef, useState } from 'react'
+import { useParams } from 'react-router-dom'
+import { useState } from 'react'
+import { CalendarX2, FileText, Loader2, Mail, Printer, SquarePen } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { useInvoice } from '../hooks/useInvoices'
 import { useProfile } from '../hooks/useProfile'
 import { supabase } from '../lib/supabase'
 import { Button } from '../components/ui/Button'
+import { IconStackButton, IconStackLink } from '../components/ui/IconStackButton'
 import { Card, CardContent, CardHeader } from '../components/ui/Card'
+import { ConfirmModal } from '../components/ui/ConfirmModal'
 import { Modal } from '../components/ui/Modal'
 import { Input } from '../components/ui/Input'
 import { Textarea } from '../components/ui/Textarea'
+import { LoadingText } from '../components/ui/LoadingText'
+import { InlineAlert } from '../components/ui/InlineAlert'
+import { PageHeading } from '../components/ui/PageHeading'
+import { InvoiceStatusBadge } from '../components/ui/InvoiceStatusBadge'
 import { formatDate } from '../lib/format'
 import { buildInvoicePdf, INVOICE_BRANDING_LINE } from '../../supabase/functions/_shared/invoice-pdf'
 import { recurrenceLabel } from '../lib/recurrence'
-import { statusColors } from '../lib/invoice-status'
 
 function computeTotals(
   lines: { quantity: number; unit_price: number }[],
@@ -43,11 +49,11 @@ export function InvoiceDetailPage() {
   const [sendDialogOpen, setSendDialogOpen] = useState(false)
   const [sendToEmail, setSendToEmail] = useState('')
   const [sendEmailMessage, setSendEmailMessage] = useState('')
-  const sendMessageRef = useRef<HTMLTextAreaElement | null>(null)
   const [markAsSentDialogOpen, setMarkAsSentDialogOpen] = useState(false)
   const [markingAsSent, setMarkingAsSent] = useState(false)
   const [stopping, setStopping] = useState(false)
   const [stopError, setStopError] = useState<string | null>(null)
+  const [stopRecurrenceDialogOpen, setStopRecurrenceDialogOpen] = useState(false)
   const handleDownloadPdf = async () => {
     if (!invoice) return
     try {
@@ -101,7 +107,7 @@ export function InvoiceDetailPage() {
 
   const handleSendEmail = async () => {
     if (!id || !sendToEmail.trim()) return
-    const message = sendMessageRef.current?.value ?? sendEmailMessage
+    const message = sendEmailMessage
     setSending(true)
     setSendResult(null)
     setSendDialogOpen(false)
@@ -164,11 +170,12 @@ export function InvoiceDetailPage() {
       setStopError(error.message)
       return
     }
+    setStopRecurrenceDialogOpen(false)
     await refetch()
   }
 
-  if (!id || isLoading) return <p className="text-gray-500">Loading...</p>
-  if (!invoice) return <p className="text-red-600">Invoice not found.</p>
+  if (!id || isLoading) return <LoadingText />
+  if (!invoice) return <InlineAlert variant="error" appearance="plain">Invoice not found.</InlineAlert>
 
   const customer = invoice.customer
   const { subtotal, tax, total } = computeTotals(
@@ -181,41 +188,69 @@ export function InvoiceDetailPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-lg font-semibold text-gray-900">Invoice - {invoice.number_display ?? invoice.number}</h2>
-        <div className="flex gap-2 print:hidden">
-          <Button variant="secondary" size="sm" onClick={() => window.print()}>
-            Print
-          </Button>
-          <Button variant="secondary" size="sm" onClick={handleDownloadPdf}>
-            Download PDF
-          </Button>
-          <Button variant="secondary" size="sm" onClick={openSendDialog} disabled={sending}>
-            {sending ? 'Sending…' : 'Send by email'}
-          </Button>
+      <div className="flex min-w-0 flex-col gap-3 md:flex-row md:items-start md:justify-between md:gap-4">
+        <PageHeading className="min-w-0 shrink-0">Invoice - {invoice.number_display ?? invoice.number}</PageHeading>
+        <div className="flex w-full min-w-0 flex-wrap items-stretch justify-end gap-1 print:hidden sm:gap-2 md:w-auto">
+          <IconStackButton
+            compact
+            variant="secondary"
+            icon={<Printer />}
+            label="Print"
+            onClick={() => window.print()}
+            aria-label="Print invoice"
+          />
+          <IconStackButton
+            compact
+            variant="secondary"
+            icon={<FileText />}
+            label="PDF"
+            onClick={handleDownloadPdf}
+            aria-label="Download PDF"
+          />
+          <IconStackButton
+            compact
+            variant="secondary"
+            icon={sending ? <Loader2 className="animate-spin" /> : <Mail />}
+            label="eMail"
+            onClick={openSendDialog}
+            disabled={sending}
+            aria-label="Send invoice by email"
+          />
           {invoice.is_recurring && (
-            <Button
+            <IconStackButton
+              compact
               variant="secondary"
-              size="sm"
-              onClick={handleStopRecurrence}
-              disabled={stopping}
-            >
-              {stopping ? 'Stopping…' : 'Stop recurrence'}
-            </Button>
+              icon={<CalendarX2 className="text-red-600" />}
+              label="Stop"
+              onClick={() => {
+                setStopError(null)
+                setStopRecurrenceDialogOpen(true)
+              }}
+              aria-label="Stop recurrence"
+            />
           )}
           {canEdit && (
-            <Link to={`/invoices/${id}/edit`}>
-              <Button size="sm">Edit</Button>
-            </Link>
+            <IconStackLink
+              compact
+              to={`/invoices/${id}/edit`}
+              variant="primary"
+              icon={<SquarePen />}
+              label="Edit"
+              aria-label="Edit invoice"
+            />
           )}
         </div>
       </div>
       {sendResult && (
-        <p className={`print:hidden ${sendResult.ok ? 'text-green-700 text-sm' : 'text-red-600 text-sm'}`} >
+        <InlineAlert variant={sendResult.ok ? 'success' : 'error'} appearance="plain" className="print:hidden text-sm">
           {sendResult.message}
-        </p>
+        </InlineAlert>
       )}
-      {stopError && <p className="text-red-600 text-sm print:hidden">{stopError}</p>}
+      {stopError && !stopRecurrenceDialogOpen && (
+        <InlineAlert variant="error" appearance="plain" className="text-sm print:hidden">
+          {stopError}
+        </InlineAlert>
+      )}
       <Modal open={sendDialogOpen} onClose={() => setSendDialogOpen(false)} title="Send invoice by email">
         <div className="space-y-4">
           <Input
@@ -227,7 +262,6 @@ export function InvoiceDetailPage() {
           />
           <Textarea
             label="Message (optional)"
-            ref={sendMessageRef}
             value={sendEmailMessage}
             onChange={(e) => setSendEmailMessage(e.target.value)}
             placeholder="Add a note for your customer…"
@@ -239,25 +273,35 @@ export function InvoiceDetailPage() {
           </div>
         </div>
       </Modal>
-      <Modal
+      <ConfirmModal
         open={markAsSentDialogOpen}
         onClose={() => setMarkAsSentDialogOpen(false)}
         title="Mark invoice as sent?"
+        confirmLabel="Yes, mark as sent"
+        cancelLabel="No, keep as draft"
+        onConfirm={handleMarkAsSent}
+        loading={markingAsSent}
+        confirmLoadingLabel="Updating…"
       >
-        <div className="space-y-4">
-          <p className="text-sm text-gray-700">
-            Would you like to mark this invoice as sent? Doing this will prevent editing the invoice again.
-          </p>
-          <div className="flex justify-end gap-2">
-            <Button variant="ghost" onClick={() => setMarkAsSentDialogOpen(false)}>
-              No, keep as draft
-            </Button>
-            <Button onClick={handleMarkAsSent} disabled={markingAsSent}>
-              {markingAsSent ? 'Updating…' : 'Yes, mark as sent'}
-            </Button>
-          </div>
-        </div>
-      </Modal>
+        <p className="text-sm text-gray-700">
+          Would you like to mark this invoice as sent? Doing this will prevent editing the invoice again.
+        </p>
+      </ConfirmModal>
+      <ConfirmModal
+        open={stopRecurrenceDialogOpen}
+        onClose={() => setStopRecurrenceDialogOpen(false)}
+        title="Stop recurrence?"
+        confirmLabel="Stop recurrence"
+        onConfirm={handleStopRecurrence}
+        confirmVariant="danger"
+        loading={stopping}
+        confirmLoadingLabel="Stopping…"
+        error={stopError}
+      >
+        <p className="text-sm text-gray-700">
+          This invoice will no longer repeat automatically. No further copies will be scheduled from this recurrence.
+        </p>
+      </ConfirmModal>
       <div>
         <Card className="print:shadow-none print:border">
           <CardHeader className="flex flex-row justify-between items-start gap-4">
@@ -280,9 +324,7 @@ export function InvoiceDetailPage() {
                 </p>
               )}
             </div>
-            <span className={`px-2 py-0.5 rounded-full text-xs font-medium capitalize shrink-0 print:hidden ${statusColors[invoice.status]}`}>
-              {invoice.status}
-            </span>
+            <InvoiceStatusBadge status={invoice.status} className="print:hidden" />
           </CardHeader>
           <CardContent>
             <table className="w-full text-sm table-fixed">

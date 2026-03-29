@@ -7,7 +7,11 @@ import { useAuth } from '../contexts/AuthContext'
 import { useCustomers, useCustomer } from '../hooks/useCustomers'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
+import { Select } from '../components/ui/Select'
 import { Card, CardContent, CardHeader } from '../components/ui/Card'
+import { LoadingText } from '../components/ui/LoadingText'
+import { InlineAlert } from '../components/ui/InlineAlert'
+import { PageHeading } from '../components/ui/PageHeading'
 import type { CustomerType } from '../types/database'
 
 const schema = z.object({
@@ -78,33 +82,25 @@ export function CustomerFormPage() {
     }
   }
 
-  if (id && loadingCustomer) return <p className="text-gray-500">Loading...</p>
+  if (id && loadingCustomer) return <LoadingText />
 
   return (
     <div className="max-w-lg">
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
-          <h2 className="text-lg font-semibold">{id ? 'Edit customer' : 'New customer'}</h2>
+          <PageHeading>{id ? 'Edit customer' : 'New customer'}</PageHeading>
           <Link to="/customers">
             <Button variant="ghost" size="sm">Cancel</Button>
           </Link>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            {submitError && (
-              <p className="text-sm text-red-600 bg-red-50 p-2 rounded-lg">{submitError}</p>
-            )}
+            {submitError ? <InlineAlert variant="error">{submitError}</InlineAlert> : null}
             <Input label="Name" error={errors.name?.message} {...register('name')} />
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
-              <select
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent"
-                {...register('type')}
-              >
-                <option value="person">Person</option>
-                <option value="company">Company</option>
-              </select>
-            </div>
+            <Select label="Type" {...register('type')}>
+              <option value="person">Person</option>
+              <option value="company">Company</option>
+            </Select>
             <Input label="Email" type="email" error={errors.email?.message} {...register('email')} />
             <Input label="Phone" {...register('phone')} />
             <Input label="Address" {...register('address')} />

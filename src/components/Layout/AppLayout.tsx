@@ -3,6 +3,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import { useProfileContext } from '../../contexts/ProfileContext'
 import { Button } from '../ui/Button'
 import { Card, CardContent } from '../ui/Card'
+import { pageTitleClassName } from '../ui/typography'
 import { NavLink } from './NavLink'
 
 const navItems = [
@@ -50,7 +51,7 @@ export function AppLayout() {
     <div className="min-h-screen flex flex-col md:flex-row bg-gray-50 print:bg-white">
       <aside className="hidden md:flex md:w-52 md:flex-col md:fixed md:inset-y-0 md:left-0 bg-white border-r border-gray-200 print:hidden">
         <div className="p-4 border-b border-gray-100">
-          <h1 className="text-lg font-semibold text-gray-900">Send Invoices Online</h1>
+          <h1 className={pageTitleClassName}>Send Invoices Online</h1>
         </div>
         <nav className="flex-1 p-2 space-y-0.5">
           {navItems.map(({ to, label }) => (
@@ -82,9 +83,9 @@ export function AppLayout() {
       </aside>
       <div className="md:pl-52 flex-1 flex flex-col min-h-screen print:pl-0">
         <header className="md:hidden sticky top-0 z-10 bg-white border-b border-gray-200 px-4 py-3 print:hidden">
-          <h1 className="text-lg font-semibold text-gray-900">Send Invoices Online</h1>
+          <h1 className={pageTitleClassName}>Send Invoices Online</h1>
         </header>
-        <main className="flex-1 flex flex-col min-h-0 p-4 pb-24 md:pb-4 md:px-6 print:py-6 print:px-6 print:pb-6">
+        <main className="flex-1 flex flex-col min-h-0 p-4 max-md:pb-[calc(9.5rem+env(safe-area-inset-bottom,0px))] md:pb-4 md:px-6 print:py-6 print:px-6 print:pb-6">
           <div className="flex-1 min-h-0">
             <Outlet />
           </div>

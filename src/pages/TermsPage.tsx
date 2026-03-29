@@ -1,7 +1,9 @@
+import { PageHeading } from '../components/ui/PageHeading'
+
 export function TermsPage() {
   return (
     <div className="max-w-lg space-y-4 text-sm text-gray-700">
-      <h2 className="text-lg font-semibold text-gray-900">Terms of service</h2>
+      <PageHeading>Terms of service</PageHeading>
       <p>
         By using this application you agree to use it lawfully and to keep your login credentials secure. You are responsible for the accuracy of invoices and customer data you enter.
       </p>

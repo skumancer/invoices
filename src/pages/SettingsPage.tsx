@@ -13,6 +13,8 @@ import { useInvoiceSequence } from '../hooks/useInvoiceSequence'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
 import { Card, CardContent, CardHeader } from '../components/ui/Card'
+import { InlineAlert } from '../components/ui/InlineAlert'
+import { PageHeading } from '../components/ui/PageHeading'
 
 const profileSchema = z.object({
   first_name: z.string().max(100).optional(),
@@ -172,7 +174,7 @@ export function SettingsPage() {
 
   return (
     <div className="max-w-lg space-y-6">
-      <h2 className="text-lg font-semibold text-gray-900">Settings</h2>
+      <PageHeading>Settings</PageHeading>
       <Card>
         <CardHeader>
           <h3 className="font-medium text-gray-900">Account</h3>
@@ -217,11 +219,9 @@ export function SettingsPage() {
         <CardContent>
           {hasEmailPassword ? (
             <form onSubmit={passwordForm.handleSubmit(onPasswordSubmit)} className="space-y-4">
-              {message && (
-                <p className={`text-sm p-2 rounded-lg ${message.type === 'success' ? 'text-green-700 bg-green-50' : 'text-red-600 bg-red-50'}`}>
-                  {message.text}
-                </p>
-              )}
+              {message ? (
+                <InlineAlert variant={message.type === 'success' ? 'success' : 'error'}>{message.text}</InlineAlert>
+              ) : null}
               <Input label="New password" type="password" autoComplete="new-password" error={passwordForm.formState.errors.password?.message} {...passwordForm.register('password')} />
               <Button type="submit" size="sm" disabled={loading}>{loading ? 'Updating…' : 'Update password'}</Button>
             </form>
@@ -240,11 +240,9 @@ export function SettingsPage() {
         </CardHeader>
         <CardContent>
           <form onSubmit={profileForm.handleSubmit(onProfileSubmit)} className="space-y-4">
-            {profileMessage && (
-              <p className={`text-sm p-2 rounded-lg ${profileMessage.type === 'success' ? 'text-green-700 bg-green-50' : 'text-red-600 bg-red-50'}`}>
-                {profileMessage.text}
-              </p>
-            )}
+            {profileMessage ? (
+              <InlineAlert variant={profileMessage.type === 'success' ? 'success' : 'error'}>{profileMessage.text}</InlineAlert>
+            ) : null}
             <Input label="First name" {...profileForm.register('first_name')} />
             <Input label="Last name" {...profileForm.register('last_name')} />
             <Input label="Tax / ID number" placeholder="Optional" {...profileForm.register('tax_id')} />
@@ -260,11 +258,9 @@ export function SettingsPage() {
         </CardHeader>
         <CardContent>
           <form onSubmit={sequenceForm.handleSubmit(onSequenceSubmit)} className="space-y-4">
-            {sequenceMessage && (
-              <p className={`text-sm p-2 rounded-lg ${sequenceMessage.type === 'success' ? 'text-green-700 bg-green-50' : 'text-red-600 bg-red-50'}`}>
-                {sequenceMessage.text}
-              </p>
-            )}
+            {sequenceMessage ? (
+              <InlineAlert variant={sequenceMessage.type === 'success' ? 'success' : 'error'}>{sequenceMessage.text}</InlineAlert>
+            ) : null}
             <Input label="Prefix" placeholder="e.g. INV-" {...sequenceForm.register('prefix')} />
             <Input label="Number of digits" type="number" min={1} max={10} error={sequenceForm.formState.errors.length?.message} {...sequenceForm.register('length')} />
             <Input label="Suffix" placeholder="e.g. -2025" {...sequenceForm.register('suffix')} />

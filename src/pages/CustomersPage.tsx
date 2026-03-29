@@ -2,17 +2,20 @@ import { Link } from 'react-router-dom'
 import { useCustomers } from '../hooks/useCustomers'
 import { Button } from '../components/ui/Button'
 import { Card, CardContent } from '../components/ui/Card'
+import { LoadingText } from '../components/ui/LoadingText'
+import { InlineAlert } from '../components/ui/InlineAlert'
+import { PageHeading } from '../components/ui/PageHeading'
 
 export function CustomersPage() {
   const { customers, isLoading, error } = useCustomers()
 
-  if (isLoading) return <p className="text-gray-500">Loading customers...</p>
-  if (error) return <p className="text-red-600">Error: {error.message}</p>
+  if (isLoading) return <LoadingText>Loading customers...</LoadingText>
+  if (error) return <InlineAlert variant="error" appearance="plain">Error: {error.message}</InlineAlert>
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-gray-900">Customers</h2>
+        <PageHeading>Customers</PageHeading>
         <Link to="/customers/new">
           <Button>Add customer</Button>
         </Link>

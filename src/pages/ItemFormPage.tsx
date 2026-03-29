@@ -4,11 +4,13 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useEffect, useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
-import { useInvoiceItem } from '../hooks/useInvoiceItems'
-import { useInvoiceItems } from '../hooks/useInvoiceItems'
+import { useInvoiceItem, useInvoiceItems } from '../hooks/useInvoiceItems'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
 import { Card, CardContent, CardHeader } from '../components/ui/Card'
+import { LoadingText } from '../components/ui/LoadingText'
+import { InlineAlert } from '../components/ui/InlineAlert'
+import { PageHeading } from '../components/ui/PageHeading'
 
 const schema = z.object({
   name: z.string().min(1, 'Required'),
@@ -63,22 +65,20 @@ export function ItemFormPage() {
     }
   }
 
-  if (id && loadingItem) return <p className="text-gray-500">Loading...</p>
+  if (id && loadingItem) return <LoadingText />
 
   return (
     <div className="max-w-lg">
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
-          <h2 className="text-lg font-semibold">{id ? 'Edit item' : 'New item'}</h2>
+          <PageHeading>{id ? 'Edit item' : 'New item'}</PageHeading>
           <Link to="/items">
             <Button variant="ghost" size="sm">Cancel</Button>
           </Link>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit((data) => onSubmit(data as FormData))} className="space-y-4">
-            {submitError && (
-              <p className="text-sm text-red-600 bg-red-50 p-2 rounded-lg">{submitError}</p>
-            )}
+            {submitError ? <InlineAlert variant="error">{submitError}</InlineAlert> : null}
             <Input label="Name" error={errors.name?.message} {...register('name')} />
             <Input label="Description" {...register('description')} />
             <Input label="Unit price" type="number" step="0.01" prefix="$" placeholder="0.00" error={errors.unit_price?.message} {...register('unit_price')} />

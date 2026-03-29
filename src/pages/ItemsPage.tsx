@@ -3,28 +3,50 @@ import { Link } from 'react-router-dom'
 import { useInvoiceItems } from '../hooks/useInvoiceItems'
 import { Button } from '../components/ui/Button'
 import { Card, CardContent } from '../components/ui/Card'
+import { ConfirmModal } from '../components/ui/ConfirmModal'
+import { LoadingText } from '../components/ui/LoadingText'
+import { InlineAlert } from '../components/ui/InlineAlert'
+import { PageHeading } from '../components/ui/PageHeading'
 
 export function ItemsPage() {
   const { items, isLoading, error, remove } = useInvoiceItems()
-  const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [deleteId, setDeleteId] = useState<string | null>(null)
+  const [deleting, setDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Delete this item?')) return
-    setDeletingId(id)
+  const openDelete = (id: string) => {
+    setDeleteError(null)
+    setDeleteId(id)
+  }
+
+  const closeDelete = () => {
+    setDeleteId(null)
+    setDeleteError(null)
+  }
+
+  const confirmDelete = async () => {
+    if (!deleteId) return
+    setDeleting(true)
+    setDeleteError(null)
     try {
-      await remove(id)
+      await remove(deleteId)
+      setDeleteId(null)
+    } catch (e) {
+      setDeleteError(e instanceof Error ? e.message : 'Could not delete item')
     } finally {
-      setDeletingId(null)
+      setDeleting(false)
     }
   }
 
-  if (isLoading) return <p className="text-gray-500">Loading items...</p>
-  if (error) return <p className="text-red-600">Error: {error.message}</p>
+  const itemPendingDelete = deleteId ? items.find((i) => i.id === deleteId) : undefined
+
+  if (isLoading) return <LoadingText>Loading items...</LoadingText>
+  if (error) return <InlineAlert variant="error" appearance="plain">Error: {error.message}</InlineAlert>
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-gray-900">Line items</h2>
+        <PageHeading>Line items</PageHeading>
         <Link to="/items/new">
           <Button>Add item</Button>
         </Link>
@@ -45,8 +67,8 @@ export function ItemsPage() {
                 <Button
                   variant="danger"
                   size="sm"
-                  onClick={() => handleDelete(item.id)}
-                  disabled={deletingId === item.id}
+                  onClick={() => openDelete(item.id)}
+                  disabled={deleting}
                 >
                   Delete
                 </Button>
@@ -62,6 +84,23 @@ export function ItemsPage() {
           </CardContent>
         </Card>
       )}
+      <ConfirmModal
+        open={!!deleteId}
+        onClose={closeDelete}
+        title="Delete item?"
+        confirmLabel="Delete"
+        confirmVariant="danger"
+        onConfirm={confirmDelete}
+        loading={deleting}
+        confirmLoadingLabel="Deleting…"
+        error={deleteError}
+      >
+        <p className="text-sm text-gray-700">
+          Delete{' '}
+          <span className="font-medium text-gray-900">{itemPendingDelete?.name ?? 'this item'}</span>? This cannot be
+          undone.
+        </p>
+      </ConfirmModal>
     </div>
   )
 }

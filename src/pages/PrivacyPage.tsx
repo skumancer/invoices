@@ -1,7 +1,9 @@
+import { PageHeading } from '../components/ui/PageHeading'
+
 export function PrivacyPage() {
   return (
     <div className="max-w-lg space-y-4 text-sm text-gray-700">
-      <h2 className="text-lg font-semibold text-gray-900">Privacy Notice</h2>
+      <PageHeading>Privacy Notice</PageHeading>
       <p>
         We collect the information you provide (such as account details, customers, items, and invoices) to run this service. Authentication and data storage are handled by our infrastructure providers under their own policies.
       </p>

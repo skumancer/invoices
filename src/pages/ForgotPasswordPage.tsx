@@ -8,9 +8,10 @@ import { getAuthErrorMessage } from '../lib/auth'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
 import { Card, CardContent, CardHeader } from '../components/ui/Card'
+import { InlineAlert } from '../components/ui/InlineAlert'
 
 const schema = z.object({
-  email: z.string().email('Invalid email'),
+  email: z.email('Invalid email'),
 })
 
 type FormData = z.infer<typeof schema>
@@ -55,9 +56,7 @@ export function ForgotPasswordPage() {
             </p>
           ) : (
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-              {error && (
-                <p className="text-sm text-red-600 bg-red-50 p-2 rounded-lg">{error}</p>
-              )}
+              {error ? <InlineAlert variant="error">{error}</InlineAlert> : null}
               <Input label="Email" type="email" {...register('email')} />
               <Button type="submit" fullWidth disabled={loading}>
                 {loading ? 'Sending…' : 'Send reset link'}

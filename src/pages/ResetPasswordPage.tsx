@@ -8,6 +8,8 @@ import { getAuthErrorMessage } from '../lib/auth'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
 import { Card, CardContent, CardHeader } from '../components/ui/Card'
+import { LoadingText } from '../components/ui/LoadingText'
+import { InlineAlert } from '../components/ui/InlineAlert'
 
 const schema = z.object({
   password: z.string().min(6, 'At least 6 characters'),
@@ -66,7 +68,7 @@ export function ResetPasswordPage() {
   }
 
   if (!ready) {
-    return <p className="min-h-screen flex items-center justify-center text-gray-500">Loading...</p>
+    return <LoadingText centered />
   }
 
   return (
@@ -77,9 +79,7 @@ export function ResetPasswordPage() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            {error && (
-              <p className="text-sm text-red-600 bg-red-50 p-2 rounded-lg">{error}</p>
-            )}
+            {error ? <InlineAlert variant="error">{error}</InlineAlert> : null}
             <Input
               label="New password"
               type="password"

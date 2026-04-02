@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
-import { AuthProvider } from './contexts/AuthContext'
-import { ProfileProvider } from './contexts/ProfileContext'
+import { AuthProvider } from './contexts/AuthProvider'
+import { ProfileProvider } from './contexts/ProfileProvider'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { AppLayout } from './components/Layout/AppLayout'
 import { Login } from './pages/Login'

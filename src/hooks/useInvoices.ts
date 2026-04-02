@@ -24,7 +24,9 @@ export function useInvoices() {
   }, [])
 
   useEffect(() => {
-    fetchInvoices()
+    queueMicrotask(() => {
+      void fetchInvoices()
+    })
   }, [fetchInvoices])
 
   const create = useCallback(
@@ -120,8 +122,10 @@ export function useInvoice(id: string | null) {
   }, [id])
 
   useEffect(() => {
-    fetchInvoice()
+    queueMicrotask(() => {
+      void fetchInvoice()
+    })
   }, [fetchInvoice])
 
-  return { invoice, isLoading: loading, refetch: fetchInvoice }
+  return { invoice: id ? invoice : null, isLoading: id ? loading : false, refetch: fetchInvoice }
 }

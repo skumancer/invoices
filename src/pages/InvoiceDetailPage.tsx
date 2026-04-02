@@ -1,7 +1,7 @@
 import { useParams } from 'react-router-dom'
 import { useState } from 'react'
 import { CalendarX2, FileText, Loader2, Mail, Printer, SquarePen } from 'lucide-react'
-import { useAuth } from '../contexts/AuthContext'
+import { useAuth } from '../contexts/useAuth'
 import { useInvoice } from '../hooks/useInvoices'
 import { useProfile } from '../hooks/useProfile'
 import { supabase } from '../lib/supabase'

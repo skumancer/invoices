@@ -21,7 +21,9 @@ export function useCustomers() {
   }, [])
 
   useEffect(() => {
-    fetchCustomers()
+    queueMicrotask(() => {
+      void fetchCustomers()
+    })
   }, [fetchCustomers])
 
   const create = useCallback(
@@ -62,23 +64,26 @@ export function useCustomer(id: string | null) {
   const [error, setError] = useState<Error | null>(null)
 
   useEffect(() => {
-    if (!id) {
-      setCustomer(null)
-      setLoading(false)
-      return
-    }
-    setLoading(true)
-    supabase
-      .from('customers')
-      .select('*')
-      .eq('id', id)
-      .single()
-      .then(({ data, error: e }) => {
-        if (e) setError(e)
-        else setCustomer(data as Customer)
-        setLoading(false)
-      })
+    if (!id) return
+    queueMicrotask(() => {
+      setLoading(true)
+      setError(null)
+      void supabase
+        .from('customers')
+        .select('*')
+        .eq('id', id)
+        .single()
+        .then(({ data, error: e }) => {
+          if (e) setError(e)
+          else setCustomer(data as Customer)
+          setLoading(false)
+        })
+    })
   }, [id])
 
-  return { customer, isLoading: loading, error }
+  return {
+    customer: id ? customer : null,
+    isLoading: id ? loading : false,
+    error: id ? error : null,
+  }
 }

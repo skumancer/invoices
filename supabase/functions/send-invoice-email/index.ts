@@ -162,7 +162,7 @@ Deno.serve(async (req: Request) => {
     }
 
     return jsonResponse({ message: "Email sent.", id: data.id }, 200);
-  } catch (e) {
+  } catch {
     return jsonResponse({ error: "An unexpected error occurred. Please try again." }, 500);
   }
 });

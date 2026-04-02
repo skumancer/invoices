@@ -1,6 +1,6 @@
 import { Link, Outlet, useNavigate } from 'react-router-dom'
-import { useAuth } from '../../contexts/AuthContext'
-import { useProfileContext } from '../../contexts/ProfileContext'
+import { useAuth } from '../../contexts/useAuth'
+import { useProfileContext } from '../../contexts/useProfileContext'
 import { Button } from '../ui/Button'
 import { Card, CardContent } from '../ui/Card'
 import { pageTitleClassName } from '../ui/typography'

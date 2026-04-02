@@ -8,12 +8,7 @@ export function useInvoiceSequence(userId: string | undefined) {
   const [error, setError] = useState<Error | null>(null)
 
   const fetchSequence = useCallback(async () => {
-    if (!userId) {
-      setSequence(null)
-      setLoading(false)
-      setError(null)
-      return
-    }
+    if (!userId) return
     setLoading(true)
     setError(null)
     const { data, error: selectErr } = await supabase
@@ -31,7 +26,9 @@ export function useInvoiceSequence(userId: string | undefined) {
   }, [userId])
 
   useEffect(() => {
-    fetchSequence()
+    queueMicrotask(() => {
+      void fetchSequence()
+    })
   }, [fetchSequence])
 
   const updateSequence = useCallback(
@@ -57,5 +54,11 @@ export function useInvoiceSequence(userId: string | undefined) {
     [userId]
   )
 
-  return { sequence, isLoading: loading, error, refetch: fetchSequence, updateSequence }
+  return {
+    sequence: userId ? sequence : null,
+    isLoading: userId ? loading : false,
+    error: userId ? error : null,
+    refetch: fetchSequence,
+    updateSequence,
+  }
 }

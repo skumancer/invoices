@@ -21,7 +21,9 @@ export function useInvoiceItems() {
   }, [])
 
   useEffect(() => {
-    fetchItems()
+    queueMicrotask(() => {
+      void fetchItems()
+    })
   }, [fetchItems])
 
   const create = useCallback(
@@ -61,22 +63,20 @@ export function useInvoiceItem(id: string | null) {
   const [loading, setLoading] = useState(!!id)
 
   useEffect(() => {
-    if (!id) {
-      setItem(null)
-      setLoading(false)
-      return
-    }
-    setLoading(true)
-    supabase
-      .from('invoice_items')
-      .select('*')
-      .eq('id', id)
-      .single()
-      .then(({ data, error: e }) => {
-        if (!e) setItem(data as InvoiceItem)
-        setLoading(false)
-      })
+    if (!id) return
+    queueMicrotask(() => {
+      setLoading(true)
+      void supabase
+        .from('invoice_items')
+        .select('*')
+        .eq('id', id)
+        .single()
+        .then(({ data, error: e }) => {
+          if (!e) setItem(data as InvoiceItem)
+          setLoading(false)
+        })
+    })
   }, [id])
 
-  return { item, isLoading: loading }
+  return { item: id ? item : null, isLoading: id ? loading : false }
 }

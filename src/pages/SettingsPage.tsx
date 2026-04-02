@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import type { User } from '@supabase/supabase-js'
-import { useAuth } from '../contexts/AuthContext'
-import { useProfileContext } from '../contexts/ProfileContext'
+import { useAuth } from '../contexts/useAuth'
+import { useProfileContext } from '../contexts/useProfileContext'
 import { useForm } from 'react-hook-form'
 import type { Resolver } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -89,7 +89,7 @@ export function SettingsPage() {
     return () => {
       cancelled = true
     }
-  }, [user?.id])
+  }, [user])
 
   const accountUser = resolvedUser ?? user
   const identities = accountUser?.identities ?? []

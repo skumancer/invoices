@@ -8,12 +8,7 @@ export function useProfile(userId: string | undefined) {
   const [error, setError] = useState<Error | null>(null)
 
   const fetchProfile = useCallback(async () => {
-    if (!userId) {
-      setProfile(null)
-      setLoading(false)
-      setError(null)
-      return
-    }
+    if (!userId) return
     setLoading(true)
     setError(null)
     const { data, error: selectErr } = await supabase.from('profiles').select('*').eq('id', userId).maybeSingle()
@@ -44,7 +39,9 @@ export function useProfile(userId: string | undefined) {
   }, [userId])
 
   useEffect(() => {
-    fetchProfile()
+    queueMicrotask(() => {
+      void fetchProfile()
+    })
   }, [fetchProfile])
 
   const update = useCallback(
@@ -63,5 +60,11 @@ export function useProfile(userId: string | undefined) {
     [userId]
   )
 
-  return { profile, isLoading: loading, error, refetch: fetchProfile, update }
+  return {
+    profile: userId ? profile : null,
+    isLoading: userId ? loading : false,
+    error: userId ? error : null,
+    refetch: fetchProfile,
+    update,
+  }
 }

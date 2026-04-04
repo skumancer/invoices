@@ -1,4 +1,4 @@
-import { useNavigate, useParams, Link } from 'react-router-dom'
+import { useNavigate, useParams, Link, useLocation } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -21,8 +21,9 @@ import { PageHeading } from '../components/ui/PageHeading'
 import { Select } from '../components/ui/Select'
 import { NativeInput } from '../components/ui/NativeInput'
 import { InvoiceLineRow } from '../components/ui/InvoiceLineRow'
-import type { Invoice, InvoiceStatus, RecurrenceUnit, TaxType } from '../types/database'
+import type { Customer, Invoice, InvoiceStatus, RecurrenceUnit, TaxType } from '../types/database'
 import type { InvoiceLine } from '../types/database'
+import type { InvoiceDraft } from '../types/invoice-draft'
 
 const schema = z.object({
   customer_id: z.string().min(1, 'Select a customer'),
@@ -45,6 +46,55 @@ type FormData = z.infer<typeof schema>
 
 const uid = () => Math.random().toString(36).slice(2)
 
+function normalizeCustomerLabel(s: string): string {
+  return s.trim().toLowerCase().replace(/\s+/g, ' ')
+}
+
+/**
+ * Prefer draft id only when it exists in `customers`. Otherwise match `customer_name`
+ * (exact, substring, or single token-overlap hit). Never return an id that is not in the list —
+ * that yields an empty-looking &lt;select&gt; and blocked the follow-up effect when `current` was truthy.
+ */
+function resolveCustomerIdFromDraft(draft: InvoiceDraft, customers: Customer[]): string {
+  if (customers.length === 0) return ''
+
+  const rawId = draft.customer_id?.trim() ?? ''
+  if (rawId && customers.some((c) => c.id === rawId)) return rawId
+
+  const name = normalizeCustomerLabel(draft.customer_name)
+  if (!name) return ''
+
+  const exact = customers.find((c) => normalizeCustomerLabel(c.name) === name)
+  if (exact) return exact.id
+
+  const narrow = customers.filter((c) => {
+    const cn = normalizeCustomerLabel(c.name)
+    return cn.includes(name) || name.includes(cn)
+  })
+  if (narrow.length === 1) return narrow[0].id
+
+  const tokens = name.split(/\s+/).filter((t) => t.length > 1)
+  if (tokens.length > 0) {
+    const byTokens = customers.filter((c) => {
+      const cn = normalizeCustomerLabel(c.name)
+      return tokens.every((t) => cn.includes(t))
+    })
+    if (byTokens.length === 1) return byTokens[0].id
+  }
+
+  return ''
+}
+
+function assistantDraftKey(d: InvoiceDraft): string {
+  return JSON.stringify({
+    n: d.customer_name,
+    id: d.customer_id,
+    issue: d.issue_date,
+    due: d.due_date,
+    lines: d.lines.map((l) => [l.description, l.quantity, l.unit_price, l.invoice_item_id]),
+  })
+}
+
 interface LineRow {
   id: string
   description: string
@@ -56,6 +106,7 @@ interface LineRow {
 export function InvoiceFormPage() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const location = useLocation()
   const { user } = useAuth()
   const { invoice, isLoading: loadingInvoice } = useInvoice(id ?? null)
   const { create, update, getNextNumber } = useInvoices()
@@ -65,8 +116,10 @@ export function InvoiceFormPage() {
   const [lines, setLines] = useState<LineRow[]>([])
   const [submitError, setSubmitError] = useState<string | null>(null)
   const initializedForId = useRef<string | null>(null)
+  const draftFromAssistantApplied = useRef(false)
+  const assistantDraftKeyRef = useRef<string | null>(null)
 
-  const { register, handleSubmit, watch, reset, setValue, formState: { errors } } = useForm<FormData>({
+  const { register, handleSubmit, watch, reset, setValue, getValues, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema) as never,
     defaultValues: {
       status: 'draft',
@@ -177,6 +230,58 @@ export function InvoiceFormPage() {
     if (watchedNumber != null) return
     setValue('number', getNextInvoiceCounter(sequence))
   }, [id, sequence, setValue, watchedNumber])
+
+  useEffect(() => {
+    if (id) return
+    const draft = (location.state as { draft?: InvoiceDraft } | null)?.draft
+    if (!draft) {
+      draftFromAssistantApplied.current = false
+      assistantDraftKeyRef.current = null
+      return
+    }
+
+    const key = assistantDraftKey(draft)
+    if (assistantDraftKeyRef.current !== key) {
+      assistantDraftKeyRef.current = key
+      draftFromAssistantApplied.current = false
+    }
+
+    const customerId = resolveCustomerIdFromDraft(draft, customers)
+
+    if (!draftFromAssistantApplied.current) {
+      draftFromAssistantApplied.current = true
+      reset({
+        customer_id: customerId,
+        status: 'draft',
+        issue_date: draft.issue_date.slice(0, 10),
+        due_date: draft.due_date.slice(0, 10),
+        tax_type: null,
+        tax_value: 0,
+        is_recurring: false,
+        recurrence_every: 1,
+        recurrence_unit: 'months',
+        next_run_date: '',
+        number: undefined,
+      })
+      setLines(
+        draft.lines.map((l) => ({
+          id: uid(),
+          description: l.description,
+          quantity: l.quantity,
+          unit_price: l.unit_price,
+          invoice_item_id: l.invoice_item_id,
+        })),
+      )
+      return
+    }
+
+    // Customers often load after the first paint, or the first reset had '' / an id not in the list.
+    const current = getValues('customer_id')
+    const currentValid = Boolean(current) && customers.length > 0 && customers.some((c) => c.id === current)
+    if (customerId && !currentValid) {
+      setValue('customer_id', customerId, { shouldDirty: false, shouldValidate: true })
+    }
+  }, [id, location.state, customers, reset, setValue, getValues])
 
   const addLine = () => {
     setLines((prev) => [

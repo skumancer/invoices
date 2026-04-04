@@ -57,6 +57,7 @@ function App() {
           >
             <Route index element={<Navigate to="/invoices" replace />} />
             <Route path="invoices" element={<InvoicesPage />} />
+            <Route path="assistant" element={<Navigate to="/invoices" replace />} />
             <Route path="invoices/new" element={<InvoiceFormPage />} />
             <Route path="invoices/:id" element={<InvoiceDetailPage />} />
             <Route path="invoices/:id/edit" element={<InvoiceFormPage />} />

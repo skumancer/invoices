@@ -79,10 +79,21 @@ Deploy the Edge Function and set secrets:
 ```bash
 npx supabase functions deploy send-invoice-email
 npx supabase secrets set RESEND_API_KEY=re_xxxx
-npx supabase secrets set FROM_EMAIL=invoices@yourdomain.com
+npx supabase secrets set FROM_EMAIL=Send-Invoices.Online<invoices@yourdomain.com>
 ```
 
 Use a [Resend](https://resend.com) API key and a verified domain (or `onboarding@resend.dev` for testing). The app calls the function when you click “Send by email” on an invoice; the customer’s email is used unless overridden.
+
+### 7. Invoice assistant (Gemini)
+
+The **Assistant** page streams chat to the `ai-create-invoice` Edge Function, which loads the signed-in user’s customers and catalog items and calls the Gemini API (server-side only).
+
+```bash
+npx supabase functions deploy ai-create-invoice
+npx supabase secrets set GOOGLE_GENERATIVE_AI_API_KEY=<your Google AI Studio / Gemini API key>
+```
+
+Get a key from [Google AI Studio](https://aistudio.google.com/apikey). Local functions need the same secret if you invoke the deployed function against a linked project; for fully local testing, use `supabase functions serve` with secrets in `supabase/functions/.env` (see Supabase docs).
 
 ## Deploy to remote Supabase
 
@@ -90,7 +101,7 @@ Use a [Resend](https://resend.com) API key and a verified domain (or `onboarding
 2. Link and push: `npx supabase link --project-ref <ref>` then `npx supabase db push`.
 3. Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY` in your host to the project’s URL and anon key.
 4. **Auth redirect URLs**: In Supabase Dashboard → Authentication → URL configuration, set **Site URL** to your app’s public URL (e.g. `https://your-app.vercel.app`). Add the same URL (and `https://your-app.vercel.app/`**) to **Redirect URLs**. Add local dev URLs if needed (e.g. `http://127.0.0.1:5173`, `http://localhost:5173`). Without this, email confirmation and password-reset links can point to the wrong host and show “load failed” when opened (e.g. on another device).
-5. Deploy the Edge Function and set `RESEND_API_KEY` (and optionally `FROM_EMAIL`) in the project secrets.
+5. Deploy Edge Functions and set secrets: `RESEND_API_KEY` (and optionally `FROM_EMAIL`), plus `GOOGLE_GENERATIVE_AI_API_KEY` for the invoice assistant. Deploy both `send-invoice-email` and `ai-create-invoice`.
 
 ## Scripts
 

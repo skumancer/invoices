@@ -1,10 +1,9 @@
 import {
   type ButtonHTMLAttributes,
+  type CSSProperties,
   type ReactNode,
-  createContext,
   forwardRef,
-  useContext,
-  useEffect,
+  useLayoutEffect,
   useMemo,
   useState,
 } from 'react'
@@ -12,8 +11,11 @@ import { AssistantModalPrimitive, AssistantRuntimeProvider } from '@assistant-ui
 import { AssistantChatTransport, useChatRuntime } from '@assistant-ui/react-ai-sdk'
 import { ChevronDown, Lightbulb } from 'lucide-react'
 import { pageTitleClassName } from '../ui/typography'
-import { AssistantThreadView, isAssistantConfigured } from '../InvoiceAssistant/AssistantChatPanel'
+import { isAssistantConfigured } from '../InvoiceAssistant/assistantConfig'
+import { AssistantThreadView } from '../InvoiceAssistant/AssistantChatPanel'
 import { supabase } from '../../lib/supabase'
+import { AssistantModalContext } from './assistantModalContext'
+import { useNarrowViewport } from './useNarrowViewport'
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL?.replace(/\/$/, '') ?? ''
 const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY ?? ''
@@ -65,21 +67,53 @@ export const AssistantLauncherButton = forwardRef<
   )
 })
 
-const narrowQuery = '(max-width: 767px)'
+const MOBILE_ASSISTANT_MAX_HEIGHT_REM = 40
 
-/** Matches Tailwind `md` breakpoint (mobile layout + header assistant). */
-export function useNarrowViewport(): boolean {
-  const [narrow, setNarrow] = useState(() =>
-    typeof window !== 'undefined' ? window.matchMedia(narrowQuery).matches : false,
-  )
-  useEffect(() => {
-    const mq = window.matchMedia(narrowQuery)
-    setNarrow(mq.matches)
-    const onChange = () => setNarrow(mq.matches)
-    mq.addEventListener('change', onChange)
-    return () => mq.removeEventListener('change', onChange)
-  }, [])
-  return narrow
+/**
+ * On narrow viewports, cap popover height to the visual viewport and lift it by the occluded
+ * keyboard inset so the composer stays visible when the field is auto-focused.
+ */
+function useAssistantMobileVisualViewportStyle(
+  open: boolean,
+  narrow: boolean,
+): CSSProperties | undefined {
+  const [style, setStyle] = useState<CSSProperties | undefined>(undefined)
+
+  useLayoutEffect(() => {
+    if (!narrow || !open) {
+      setStyle(undefined)
+      return
+    }
+    const vv = window.visualViewport
+    if (!vv) {
+      setStyle(undefined)
+      return
+    }
+
+    const update = () => {
+      const remPx = Number.parseFloat(getComputedStyle(document.documentElement).fontSize) || 16
+      const heightCapPx = MOBILE_ASSISTANT_MAX_HEIGHT_REM * remPx
+      const verticalGutterPx = 24
+      const keyboardInsetPx = Math.max(0, window.innerHeight - vv.height - vv.offsetTop)
+      const maxHeight = Math.min(heightCapPx, Math.max(0, vv.height - verticalGutterPx))
+      setStyle({
+        maxHeight,
+        marginBottom: keyboardInsetPx,
+      })
+    }
+
+    update()
+    vv.addEventListener('resize', update)
+    vv.addEventListener('scroll', update)
+    window.addEventListener('resize', update)
+    return () => {
+      vv.removeEventListener('resize', update)
+      vv.removeEventListener('scroll', update)
+      window.removeEventListener('resize', update)
+    }
+  }, [narrow, open])
+
+  return style
 }
 
 /**
@@ -102,13 +136,6 @@ const assistantPopoverContentClass =
     'md:data-[state=closed]:slide-out-to-bottom-8 md:data-[state=closed]:slide-out-to-right-8',
   ].join(' ')
 
-const AssistantModalContext = createContext<() => void>(() => { })
-
-/** Close the assistant popover from any descendant component. */
-export function useCloseAssistant(): () => void {
-  return useContext(AssistantModalContext)
-}
-
 /**
  * Hosts `AssistantRuntimeProvider` + `AssistantModalPrimitive` (see
  * [assistant-ui modal sample](https://github.com/assistant-ui/assistant-ui/blob/main/apps/docs/components/docs/samples/assistant-modal.tsx)).
@@ -116,6 +143,7 @@ export function useCloseAssistant(): () => void {
 export function AssistantModalRoot({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false)
   const narrow = useNarrowViewport()
+  const mobileViewportStyle = useAssistantMobileVisualViewportStyle(open, narrow)
 
   const transport = useMemo(
     () =>
@@ -144,6 +172,7 @@ export function AssistantModalRoot({ children }: { children: ReactNode }) {
             collisionPadding={narrow ? { top: 4, bottom: 88, left: 10, right: 10 } : 12}
             dissmissOnInteractOutside
             className={`${assistantPopoverContentClass} z-[100]`}
+            style={mobileViewportStyle}
           >
             <div className="flex shrink-0 items-center border-b border-gray-200 px-4 py-3">
               <h2 className={pageTitleClassName}>Invoice Assistant</h2>

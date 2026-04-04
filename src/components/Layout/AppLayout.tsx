@@ -6,7 +6,8 @@ import { Button } from '../ui/Button'
 import { Card, CardContent } from '../ui/Card'
 import { pageTitleClassName } from '../ui/typography'
 import { NavLink } from './NavLink'
-import { AssistantLauncherButton, AssistantModalRoot, useNarrowViewport } from './AssistantModal'
+import { AssistantLauncherButton, AssistantModalRoot } from './AssistantModal'
+import { useNarrowViewport } from './useNarrowViewport'
 
 const navItems = [
   { to: '/invoices', label: 'Invoices' },
@@ -86,7 +87,7 @@ export function AppLayout() {
           </div>
         </aside>
         <div className="md:pl-52 flex-1 flex flex-col min-h-screen print:pl-0">
-          <header className="sticky top-0 z-10 flex flex-row items-center justify-between gap-3 border-b border-gray-200 bg-white px-4 py-3 md:hidden print:hidden">
+          <header className="fixed inset-x-0 top-0 z-10 flex h-[calc(3.5rem+env(safe-area-inset-top,0px))] flex-row items-center justify-between gap-3 border-b border-gray-200 bg-white px-4 pt-[env(safe-area-inset-top,0px)] pb-3 md:hidden print:hidden">
             <h1 className={`${pageTitleClassName} min-w-0 flex-1`}>Send Invoices Online</h1>
             {narrow && (
               <AssistantModalPrimitive.Trigger asChild>
@@ -94,7 +95,7 @@ export function AppLayout() {
               </AssistantModalPrimitive.Trigger>
             )}
           </header>
-          <main className="flex-1 flex flex-col min-h-0 min-w-0 p-4 max-md:pb-[calc(9.5rem+env(safe-area-inset-bottom,0px))] md:pb-4 md:px-6 print:py-6 print:px-6 print:pb-6">
+          <main className="flex-1 flex flex-col min-h-0 min-w-0 px-4 py-4 max-md:pt-[calc(1rem+3.5rem+env(safe-area-inset-top,0px))] max-md:pb-[calc(9.5rem+env(safe-area-inset-bottom,0px))] md:p-4 md:px-6 print:py-6 print:px-6 print:pb-6">
             <div className="flex flex-1 min-h-0 min-w-0 flex-col">
               <Outlet />
             </div>

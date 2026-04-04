@@ -5,9 +5,18 @@ import {
 } from '@assistant-ui/react'
 import { StructuredAssistantText } from './StructuredAssistantText'
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL?.replace(/\/$/, '') ?? ''
-
 const sendButtonClass = 'font-medium transition-colors inline-flex items-center justify-center gap-2 px-3 py-1.5 text-sm rounded-lg bg-gray-900 text-white hover:bg-gray-800 disabled:bg-gray-300 disabled:cursor-not-allowed'
+
+const narrowQuery = '(max-width: 767px)'
+
+/** iOS Safari scrolls the layout viewport on focus; fixed popovers drift. Reset after focus. */
+function resetLayoutScrollForMobileAssistant() {
+  if (typeof window === 'undefined' || !window.matchMedia(narrowQuery).matches) return
+  const go = () => window.scrollTo(0, 0)
+  go()
+  requestAnimationFrame(go)
+  requestAnimationFrame(() => requestAnimationFrame(go))
+}
 
 function UserBubble() {
   return (
@@ -50,9 +59,10 @@ export function AssistantThreadView() {
       <div className="border-t border-gray-200 p-2">
         <ComposerPrimitive.Root className="flex items-end gap-2">
           <ComposerPrimitive.Input
-            placeholder="e.g. Invoice Acme Corp for 3× consulting at 150 each"
+            placeholder="Invoice Acme Corp for 3× consulting at 150 each"
             rows={1}
-            className="min-h-10 max-h-40 flex-1 resize-none rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-gray-500"
+            className="min-h-10 max-h-40 flex-1 resize-none rounded-lg border border-gray-300 px-3 py-2 text-base outline-none focus:border-gray-500 md:text-sm"
+            onFocus={resetLayoutScrollForMobileAssistant}
           />
           <ComposerPrimitive.Send className={sendButtonClass}>
             Send
@@ -61,8 +71,4 @@ export function AssistantThreadView() {
       </div>
     </ThreadPrimitive.Root>
   )
-}
-
-export function isAssistantConfigured(): boolean {
-  return Boolean(supabaseUrl)
 }

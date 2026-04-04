@@ -9,7 +9,7 @@ import type { InvoiceDraft } from '../../types/invoice-draft'
 import { Button } from '../ui/Button'
 import { Card, CardContent } from '../ui/Card'
 import { InlineAlert } from '../ui/InlineAlert'
-import { useCloseAssistant } from '../Layout/AssistantModal'
+import { useCloseAssistant } from '../Layout/assistantModalContext'
 
 export function InvoiceDraftPreview(props: { draft: InvoiceDraft }) {
   const { draft } = props

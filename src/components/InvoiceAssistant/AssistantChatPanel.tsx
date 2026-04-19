@@ -42,7 +42,7 @@ function AssistantBubble() {
 export function AssistantThreadView() {
   return (
     <ThreadPrimitive.Root className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-gray-200 bg-white">
-      <ThreadPrimitive.Viewport className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain p-3">
+      <ThreadPrimitive.Viewport className="mobile-scroll min-h-0 flex-1 overflow-x-hidden p-3">
         <ThreadPrimitive.Empty>
           <p className="py-8 text-center text-sm text-gray-500">
             Describe the invoice (customer, line items, quantities, prices). The assistant will propose a draft for you.

@@ -6,7 +6,13 @@ import tseslint from 'typescript-eslint'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['dist']),
+  globalIgnores([
+    'dist',
+    // Capacitor copies web build output into native projects; do not lint bundled JS.
+    'android/**/public/**',
+    'ios/**/public/**',
+    'ios/DerivedData/**',
+  ]),
   {
     files: ['**/*.{ts,tsx}'],
     extends: [

@@ -80,15 +80,9 @@ function useAssistantMobileVisualViewportStyle(
   const [style, setStyle] = useState<CSSProperties | undefined>(undefined)
 
   useLayoutEffect(() => {
-    if (!narrow || !open) {
-      setStyle(undefined)
-      return
-    }
+    if (!narrow || !open) return
     const vv = window.visualViewport
-    if (!vv) {
-      setStyle(undefined)
-      return
-    }
+    if (!vv) return
 
     const update = () => {
       const remPx = Number.parseFloat(getComputedStyle(document.documentElement).fontSize) || 16
@@ -113,6 +107,7 @@ function useAssistantMobileVisualViewportStyle(
     }
   }, [narrow, open])
 
+  if (!narrow || !open) return undefined
   return style
 }
 

@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { supabase } from '../lib/supabase'
+import { signOutWithServerInvalidation } from '../lib/auth-session'
 import { getAuthErrorMessage } from '../lib/auth'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
@@ -58,7 +59,7 @@ export function ResetPasswordPage() {
         setError(getAuthErrorMessage(err))
         return
       }
-      await supabase.auth.signOut()
+      await signOutWithServerInvalidation()
       navigate('/login', { replace: true, state: { message: 'Password updated. Sign in with your new password.' } })
     } catch (e) {
       setError(getAuthErrorMessage(e))

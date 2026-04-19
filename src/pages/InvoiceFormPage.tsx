@@ -11,6 +11,7 @@ import { useCustomers } from '../hooks/useCustomers'
 import { useInvoiceItems } from '../hooks/useInvoiceItems'
 import { formatInvoiceDisplay, getNextInvoiceCounter } from '../lib/invoice-number'
 import { supabase } from '../lib/supabase'
+import { isNativePlatform } from '../lib/platform/capacitor'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
 import { Card, CardContent, CardHeader } from '../components/ui/Card'
@@ -104,6 +105,7 @@ interface LineRow {
 }
 
 export function InvoiceFormPage() {
+  const nativeScrollShell = isNativePlatform()
   const { id } = useParams()
   const navigate = useNavigate()
   const location = useLocation()
@@ -452,16 +454,19 @@ export function InvoiceFormPage() {
   if (id && loadingInvoice) return <LoadingText />
 
   return (
-    <div className="max-w-2xl space-y-4">
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <PageHeading>{id ? 'Edit invoice' : 'New invoice'}</PageHeading>
-          <Link to={id ? `/invoices/${id}` : '/invoices'}>
-            <Button variant="ghost" size="sm">Cancel</Button>
-          </Link>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit((data) => onSubmit(data as FormData))} className="space-y-6">
+    <div className="flex min-h-0 flex-1 flex-col">
+      <div className={nativeScrollShell ? 'mobile-scroll min-h-0 flex-1' : 'min-h-0 flex-1'}>
+        <div className={nativeScrollShell ? 'min-h-[calc(100%+1px)]' : ''}>
+          <div className="max-w-2xl space-y-4">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <PageHeading>{id ? 'Edit invoice' : 'New invoice'}</PageHeading>
+                <Link to={id ? `/invoices/${id}` : '/invoices'}>
+                  <Button variant="ghost" size="sm">Cancel</Button>
+                </Link>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleSubmit((data) => onSubmit(data as FormData))} className="space-y-6">
             {submitError ? <InlineAlert variant="error">{submitError}</InlineAlert> : null}
             <div>
               {invoiceNumberControl}
@@ -610,10 +615,13 @@ export function InvoiceFormPage() {
               <option value="paid">Paid</option>
               <option value="cancelled">Cancelled</option>
             </Select>
-            <Button type="submit" fullWidth>{id ? 'Update invoice' : 'Create invoice'}</Button>
-          </form>
-        </CardContent>
-      </Card>
+                  <Button type="submit" fullWidth>{id ? 'Update invoice' : 'Create invoice'}</Button>
+                </form>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }

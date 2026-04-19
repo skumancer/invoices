@@ -3,12 +3,16 @@ import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
+import { Browser } from '@capacitor/browser'
 import { supabase } from '../lib/supabase'
 import { getAuthErrorMessage } from '../lib/auth'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
 import { Card, CardContent, CardHeader } from '../components/ui/Card'
 import { InlineAlert } from '../components/ui/InlineAlert'
+import { EnvironmentBadge } from '../components/ui/EnvironmentBadge'
+import { isNativePlatform } from '../lib/platform/capacitor'
+import { getAuthRedirectUrl } from '../lib/platform/auth'
 
 const schema = z.object({
   email: z.email('Invalid email'),
@@ -32,8 +36,12 @@ export function Login() {
   const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || ''
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [googleLoading, setGoogleLoading] = useState(false)
+  const isNative = isNativePlatform()
 
   useEffect(() => {
+    if (isNative) return
+
     window.handleSignInWithGoogle = async (response: GoogleCredentialResponse) => {
       setError(null)
       try {
@@ -69,7 +77,7 @@ export function Login() {
     return () => {
       delete window.handleSignInWithGoogle
     }
-  }, [from, navigate])
+  }, [from, navigate, isNative])
 
   const { register, handleSubmit, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -89,6 +97,29 @@ export function Login() {
       setError(getAuthErrorMessage(e))
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleGoogleNativeSignIn = async () => {
+    setError(null)
+    setGoogleLoading(true)
+    try {
+      const { data, error: err } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: getAuthRedirectUrl('/invoices'),
+          skipBrowserRedirect: true,
+        },
+      })
+      if (err || !data?.url) {
+        setError(getAuthErrorMessage(err ?? new Error('Could not start Google sign in.')))
+        return
+      }
+      await Browser.open({ url: data.url, presentationStyle: 'fullscreen' })
+    } catch (e) {
+      setError(getAuthErrorMessage(e))
+    } finally {
+      setGoogleLoading(false)
     }
   }
 
@@ -128,28 +159,42 @@ export function Login() {
                 <span className="bg-white px-2 text-gray-500">or</span>
               </div>
             </div>
-            <div
-              id="g_id_onload"
-              data-client_id={googleClientId}
-              data-context="use"
-              data-ux_mode="popup"
-              data-callback="handleSignInWithGoogle"
-              data-nonce=""
-              data-auto_prompt="false"
-              data-auto_select="true"
-              data-itp_support="true"
-              data-use_fedcm_for_prompt="true"
-            />
-            <div
-              className="g_id_signin flex justify-center"
-              data-type="standard"
-              data-shape="rectangular"
-              data-theme="outline"
-              data-text="continue_with"
-              data-size="large"
-              data-logo_alignment="center"
-              data-width="350"
-            />
+            {isNative ? (
+              <Button
+                type="button"
+                variant="secondary"
+                fullWidth
+                onClick={handleGoogleNativeSignIn}
+                disabled={googleLoading}
+              >
+                {googleLoading ? 'Opening Google…' : 'Continue with Google'}
+              </Button>
+            ) : (
+              <>
+                <div
+                  id="g_id_onload"
+                  data-client_id={googleClientId}
+                  data-context="use"
+                  data-ux_mode="popup"
+                  data-callback="handleSignInWithGoogle"
+                  data-nonce=""
+                  data-auto_prompt="false"
+                  data-auto_select="true"
+                  data-itp_support="true"
+                  data-use_fedcm_for_prompt="true"
+                />
+                <div
+                  className="g_id_signin flex justify-center"
+                  data-type="standard"
+                  data-shape="rectangular"
+                  data-theme="outline"
+                  data-text="continue_with"
+                  data-size="large"
+                  data-logo_alignment="center"
+                  data-width="350"
+                />
+              </>
+            )}
           </form>
           <p className="mt-4 text-sm text-gray-600 text-center space-y-1">
             <Link to="/forgot-password" className="block font-medium text-gray-900 hover:underline">Forgot password?</Link>
@@ -166,6 +211,7 @@ export function Login() {
           </p>
         </CardContent>
       </Card>
+      <EnvironmentBadge />
     </div>
   )
 }

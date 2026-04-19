@@ -13,6 +13,7 @@ import { LoadingText } from '../components/ui/LoadingText'
 import { InlineAlert } from '../components/ui/InlineAlert'
 import { PageHeading } from '../components/ui/PageHeading'
 import type { CustomerType } from '../types/database'
+import { isNativePlatform } from '../lib/platform/capacitor'
 
 const schema = z.object({
   name: z.string().min(1, 'Required'),
@@ -26,6 +27,7 @@ const schema = z.object({
 type FormData = z.infer<typeof schema>
 
 export function CustomerFormPage() {
+  const nativeScrollShell = isNativePlatform()
   const { id } = useParams()
   const navigate = useNavigate()
   const { user } = useAuth()
@@ -85,30 +87,36 @@ export function CustomerFormPage() {
   if (id && loadingCustomer) return <LoadingText />
 
   return (
-    <div className="max-w-lg">
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <PageHeading>{id ? 'Edit customer' : 'New customer'}</PageHeading>
-          <Link to="/customers">
-            <Button variant="ghost" size="sm">Cancel</Button>
-          </Link>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            {submitError ? <InlineAlert variant="error">{submitError}</InlineAlert> : null}
-            <Input label="Name" error={errors.name?.message} {...register('name')} />
-            <Select label="Type" {...register('type')}>
-              <option value="person">Person</option>
-              <option value="company">Company</option>
-            </Select>
-            <Input label="Email" type="email" error={errors.email?.message} {...register('email')} />
-            <Input label="Phone" {...register('phone')} />
-            <Input label="Address" {...register('address')} />
-            <Input label="Tax / ID number" placeholder="Optional" {...register('tax_id')} />
-            <Button type="submit" fullWidth>{id ? 'Update' : 'Create'}</Button>
-          </form>
-        </CardContent>
-      </Card>
+    <div className="flex min-h-0 flex-1 flex-col">
+      <div className={nativeScrollShell ? 'mobile-scroll min-h-0 flex-1' : 'min-h-0 flex-1'}>
+        <div className={nativeScrollShell ? 'min-h-[calc(100%+1px)]' : ''}>
+          <div className="max-w-lg">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <PageHeading>{id ? 'Edit customer' : 'New customer'}</PageHeading>
+                <Link to="/customers">
+                  <Button variant="ghost" size="sm">Cancel</Button>
+                </Link>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+                  {submitError ? <InlineAlert variant="error">{submitError}</InlineAlert> : null}
+                  <Input label="Name" error={errors.name?.message} {...register('name')} />
+                  <Select label="Type" {...register('type')}>
+                    <option value="person">Person</option>
+                    <option value="company">Company</option>
+                  </Select>
+                  <Input label="Email" type="email" error={errors.email?.message} {...register('email')} />
+                  <Input label="Phone" {...register('phone')} />
+                  <Input label="Address" {...register('address')} />
+                  <Input label="Tax / ID number" placeholder="Optional" {...register('tax_id')} />
+                  <Button type="submit" fullWidth>{id ? 'Update' : 'Create'}</Button>
+                </form>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }

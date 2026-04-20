@@ -11,7 +11,7 @@ import { Card, CardContent, CardHeader } from '../components/ui/Card'
 import { LoadingText } from '../components/ui/LoadingText'
 import { InlineAlert } from '../components/ui/InlineAlert'
 import { PageHeading } from '../components/ui/PageHeading'
-import { isNativePlatform } from '../lib/platform/capacitor'
+import { PageScroll } from '../components/Layout/PageScroll'
 
 const schema = z.object({
   name: z.string().min(1, 'Required'),
@@ -22,7 +22,6 @@ const schema = z.object({
 type FormData = z.infer<typeof schema>
 
 export function ItemFormPage() {
-  const nativeScrollShell = isNativePlatform()
   const { id } = useParams()
   const navigate = useNavigate()
   const { user } = useAuth()
@@ -71,29 +70,27 @@ export function ItemFormPage() {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div className={nativeScrollShell ? 'mobile-scroll min-h-0 flex-1' : 'min-h-0 flex-1'}>
-        <div className={nativeScrollShell ? 'min-h-[calc(100%+1px)]' : ''}>
-          <div className="max-w-lg">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <PageHeading>{id ? 'Edit item' : 'New item'}</PageHeading>
-                <Link to="/items">
-                  <Button variant="ghost" size="sm">Cancel</Button>
-                </Link>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleSubmit((data) => onSubmit(data as FormData))} className="space-y-4">
-                  {submitError ? <InlineAlert variant="error">{submitError}</InlineAlert> : null}
-                  <Input label="Name" error={errors.name?.message} {...register('name')} />
-                  <Input label="Description" {...register('description')} />
-                  <Input label="Unit price" type="number" step="0.01" prefix="$" placeholder="0.00" error={errors.unit_price?.message} {...register('unit_price')} />
-                  <Button type="submit" fullWidth>{id ? 'Update' : 'Create'}</Button>
-                </form>
-              </CardContent>
-            </Card>
-          </div>
+      <PageScroll>
+        <div className="max-w-lg">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <PageHeading>{id ? 'Edit item' : 'New item'}</PageHeading>
+              <Link to="/items">
+                <Button variant="ghost" size="sm">Cancel</Button>
+              </Link>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleSubmit((data) => onSubmit(data as FormData))} className="space-y-4">
+                {submitError ? <InlineAlert variant="error">{submitError}</InlineAlert> : null}
+                <Input label="Name" error={errors.name?.message} {...register('name')} />
+                <Input label="Description" {...register('description')} />
+                <Input label="Unit price" type="number" step="0.01" prefix="$" placeholder="0.00" error={errors.unit_price?.message} {...register('unit_price')} />
+                <Button type="submit" fullWidth>{id ? 'Update' : 'Create'}</Button>
+              </form>
+            </CardContent>
+          </Card>
         </div>
-      </div>
+      </PageScroll>
     </div>
   )
 }

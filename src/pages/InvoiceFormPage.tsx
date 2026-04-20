@@ -11,7 +11,6 @@ import { useCustomers } from '../hooks/useCustomers'
 import { useInvoiceItems } from '../hooks/useInvoiceItems'
 import { formatInvoiceDisplay, getNextInvoiceCounter } from '../lib/invoice-number'
 import { supabase } from '../lib/supabase'
-import { isNativePlatform } from '../lib/platform/capacitor'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
 import { Card, CardContent, CardHeader } from '../components/ui/Card'
@@ -22,6 +21,7 @@ import { PageHeading } from '../components/ui/PageHeading'
 import { Select } from '../components/ui/Select'
 import { NativeInput } from '../components/ui/NativeInput'
 import { InvoiceLineRow } from '../components/ui/InvoiceLineRow'
+import { PageScroll } from '../components/Layout/PageScroll'
 import type { Customer, Invoice, InvoiceStatus, RecurrenceUnit, TaxType } from '../types/database'
 import type { InvoiceLine } from '../types/database'
 import type { InvoiceDraft } from '../types/invoice-draft'
@@ -105,7 +105,6 @@ interface LineRow {
 }
 
 export function InvoiceFormPage() {
-  const nativeScrollShell = isNativePlatform()
   const { id } = useParams()
   const navigate = useNavigate()
   const location = useLocation()
@@ -455,173 +454,171 @@ export function InvoiceFormPage() {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div className={nativeScrollShell ? 'mobile-scroll min-h-0 flex-1' : 'min-h-0 flex-1'}>
-        <div className={nativeScrollShell ? 'min-h-[calc(100%+1px)]' : ''}>
-          <div className="max-w-2xl space-y-4">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <PageHeading>{id ? 'Edit invoice' : 'New invoice'}</PageHeading>
-                <Link to={id ? `/invoices/${id}` : '/invoices'}>
-                  <Button variant="ghost" size="sm">Cancel</Button>
-                </Link>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleSubmit((data) => onSubmit(data as FormData))} className="space-y-6">
-            {submitError ? <InlineAlert variant="error">{submitError}</InlineAlert> : null}
-            <div>
-              {invoiceNumberControl}
-            </div>
-            <Select label="Customer" error={errors.customer_id?.message} {...register('customer_id')}>
-              <option value="">Select customer</option>
-              {customers.map((c) => (
-                <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
-            </Select>
-            <br />
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div className="min-w-0">
-                <Input label="Issue date" type="date" error={errors.issue_date?.message} {...register('issue_date')} />
-              </div>
-              <div className="min-w-0">
-                <Input label="Due date" type="date" error={errors.due_date?.message} {...register('due_date')} />
-              </div>
-            </div>
-            {/* Recurring */}
-            <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  id="is_recurring"
-                  {...register('is_recurring')}
-                  className="rounded border-gray-300"
-                />
-                <label htmlFor="is_recurring" className="text-sm font-medium text-gray-700">
-                  Recurring invoice
-                </label>
-              </div>
-              {isRecurring && (
+      <PageScroll>
+        <div className="max-w-2xl space-y-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <PageHeading>{id ? 'Edit invoice' : 'New invoice'}</PageHeading>
+              <Link to={id ? `/invoices/${id}` : '/invoices'}>
+                <Button variant="ghost" size="sm">Cancel</Button>
+              </Link>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleSubmit((data) => onSubmit(data as FormData))} className="space-y-6">
+                {submitError ? <InlineAlert variant="error">{submitError}</InlineAlert> : null}
+                <div>
+                  {invoiceNumberControl}
+                </div>
+                <Select label="Customer" error={errors.customer_id?.message} {...register('customer_id')}>
+                  <option value="">Select customer</option>
+                  {customers.map((c) => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </Select>
+                <br />
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <div className="min-w-0">
+                    <Input label="Issue date" type="date" error={errors.issue_date?.message} {...register('issue_date')} />
+                  </div>
+                  <div className="min-w-0">
+                    <Input label="Due date" type="date" error={errors.due_date?.message} {...register('due_date')} />
+                  </div>
+                </div>
+                {/* Recurring */}
                 <div className="space-y-3">
-                  <div className="flex min-w-0 flex-wrap items-center gap-2 text-sm text-gray-700">
-                    <span className="shrink-0">Every</span>
-                    <div className="grid min-w-0 flex-1 basis-0 grid-cols-3 gap-2">
-                      <div className="col-span-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      id="is_recurring"
+                      {...register('is_recurring')}
+                      className="rounded border-gray-300"
+                    />
+                    <label htmlFor="is_recurring" className="text-sm font-medium text-gray-700">
+                      Recurring invoice
+                    </label>
+                  </div>
+                  {isRecurring && (
+                    <div className="space-y-3">
+                      <div className="flex min-w-0 flex-wrap items-center gap-2 text-sm text-gray-700">
+                        <span className="shrink-0">Every</span>
+                        <div className="grid min-w-0 flex-1 basis-0 grid-cols-3 gap-2">
+                          <div className="col-span-1 min-w-0">
+                            <NativeInput
+                              type="number"
+                              min={1}
+                              wrapperClassName="min-w-0"
+                              className="w-full min-w-0"
+                              {...register('recurrence_every')}
+                            />
+                          </div>
+                          <div className="col-span-2 min-w-0">
+                            <Select containerClassName="min-w-0" {...register('recurrence_unit')}>
+                              <option value="days">days</option>
+                              <option value="weeks">weeks</option>
+                              <option value="months">months</option>
+                              <option value="years">years</option>
+                            </Select>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex min-w-0 items-center gap-2 text-sm text-gray-700">
+                        <span className="shrink-0">starting on</span>
                         <NativeInput
-                          type="number"
-                          min={1}
-                          wrapperClassName="min-w-0"
+                          type="date"
+                          wrapperClassName="min-w-0 flex-1"
                           className="w-full min-w-0"
-                          {...register('recurrence_every')}
+                          {...register('next_run_date')}
                         />
                       </div>
-                      <div className="col-span-2 min-w-0">
-                        <Select containerClassName="min-w-0" {...register('recurrence_unit')}>
-                          <option value="days">days</option>
-                          <option value="weeks">weeks</option>
-                          <option value="months">months</option>
-                          <option value="years">years</option>
-                        </Select>
-                      </div>
+                      {errors.next_run_date && (
+                        <p className="text-sm text-red-600">{errors.next_run_date.message}</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+                <br />
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Line items</label>
+                  <div className="min-w-0 space-y-2">
+                    {lines.map((line, index) => (
+                      <InvoiceLineRow
+                        key={line.id}
+                        lineNumber={index + 1}
+                        description={line.description}
+                        quantity={line.quantity}
+                        unitPrice={line.unit_price}
+                        onDescriptionChange={(value) => updateLine(line.id, 'description', value)}
+                        onQuantityChange={(value) => updateLine(line.id, 'quantity', value)}
+                        onUnitPriceChange={(value) => updateLine(line.id, 'unit_price', value)}
+                        onRemove={() => removeLine(line.id)}
+                      />
+                    ))}
+                  </div>
+                  <br />
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                    <Button type="button" variant="secondary" size="sm" onClick={addLine}>
+                      <CirclePlus className="h-4 w-4 shrink-0" aria-hidden />
+                      Add line
+                    </Button>
+                    {items.length > 0 && (
+                      <Select
+                        inputSize="sm"
+                        value=""
+                        onChange={(e) => {
+                          const item = items.find((i) => i.id === e.target.value)
+                          if (item) addItemAsLine(item)
+                        }}
+                      >
+                        <option value="">Add saved item</option>
+                        {items.map((i) => (
+                          <option key={i.id} value={i.id}>{i.name}</option>
+                        ))}
+                      </Select>
+                    )}
+                  </div>
+                </div>
+                {/* Tax rate — full width (was grid-cols-2 with one child → half-width select on mobile) */}
+                <div className="min-w-0">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Tax</label>
+                  <div className="grid min-w-0 grid-cols-3 gap-2">
+                    <Select containerClassName="col-span-2 min-w-0" {...register('tax_type')}>
+                      <option value="">None</option>
+                      <option value="percent">Percent</option>
+                      <option value="fixed">Fixed amount</option>
+                    </Select>
+                    <div className="col-span-1 flex min-w-0">
+                      {watch('tax_type') === 'fixed' && (
+                        <span className="inline-flex shrink-0 items-center rounded-l-lg border border-r-0 border-gray-300 bg-gray-50 px-2 py-2 text-sm text-gray-600 sm:px-3">
+                          $
+                        </span>
+                      )}
+                      <NativeInput
+                        type="number"
+                        min={0}
+                        step={0.01}
+                        wrapperClassName="min-w-0 flex-1"
+                        className={[
+                          watch('tax_type') === 'fixed' ? 'w-full rounded-r-lg' : 'w-full rounded-lg',
+                        ].join(' ')}
+                        placeholder={watch('tax_type') === 'percent' ? '%' : '0.00'}
+                        {...register('tax_value')}
+                      />
                     </div>
                   </div>
-                  <div className="flex min-w-0 items-center gap-2 text-sm text-gray-700">
-                    <span className="shrink-0">starting on</span>
-                    <NativeInput
-                      type="date"
-                      wrapperClassName="min-w-0 flex-1"
-                      className="w-full min-w-0"
-                      {...register('next_run_date')}
-                    />
-                  </div>
-                  {errors.next_run_date && (
-                    <p className="text-sm text-red-600">{errors.next_run_date.message}</p>
-                  )}
                 </div>
-              )}
-            </div>
-            <br />
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Line items</label>
-              <div className="min-w-0 space-y-2">
-                {lines.map((line, index) => (
-                  <InvoiceLineRow
-                    key={line.id}
-                    lineNumber={index + 1}
-                    description={line.description}
-                    quantity={line.quantity}
-                    unitPrice={line.unit_price}
-                    onDescriptionChange={(value) => updateLine(line.id, 'description', value)}
-                    onQuantityChange={(value) => updateLine(line.id, 'quantity', value)}
-                    onUnitPriceChange={(value) => updateLine(line.id, 'unit_price', value)}
-                    onRemove={() => removeLine(line.id)}
-                  />
-                ))}
-              </div>
-              <br />
-              <div className="mt-2 flex flex-wrap items-center gap-2">
-                <Button type="button" variant="secondary" size="sm" onClick={addLine}>
-                  <CirclePlus className="h-4 w-4 shrink-0" aria-hidden />
-                  Add line
-                </Button>
-                {items.length > 0 && (
-                  <Select
-                    inputSize="sm"
-                    value=""
-                    onChange={(e) => {
-                      const item = items.find((i) => i.id === e.target.value)
-                      if (item) addItemAsLine(item)
-                    }}
-                  >
-                    <option value="">Add saved item</option>
-                    {items.map((i) => (
-                      <option key={i.id} value={i.id}>{i.name}</option>
-                    ))}
-                  </Select>
-                )}
-              </div>
-            </div>
-            {/* Tax rate — full width (was grid-cols-2 with one child → half-width select on mobile) */}
-            <div className="min-w-0">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Tax</label>
-              <div className="grid min-w-0 grid-cols-3 gap-2">
-                <Select containerClassName="col-span-2 min-w-0" {...register('tax_type')}>
-                  <option value="">None</option>
-                  <option value="percent">Percent</option>
-                  <option value="fixed">Fixed amount</option>
+                {/* Status */}
+                <Select label="Status" {...register('status')}>
+                  <option value="draft">Draft</option>
+                  <option value="sent">Sent</option>
+                  <option value="paid">Paid</option>
+                  <option value="cancelled">Cancelled</option>
                 </Select>
-                <div className="col-span-1 flex min-w-0">
-                  {watch('tax_type') === 'fixed' && (
-                    <span className="inline-flex shrink-0 items-center rounded-l-lg border border-r-0 border-gray-300 bg-gray-50 px-2 py-2 text-sm text-gray-600 sm:px-3">
-                      $
-                    </span>
-                  )}
-                  <NativeInput
-                    type="number"
-                    min={0}
-                    step={0.01}
-                    wrapperClassName="min-w-0 flex-1"
-                    className={[
-                      watch('tax_type') === 'fixed' ? 'w-full rounded-r-lg' : 'w-full rounded-lg',
-                    ].join(' ')}
-                    placeholder={watch('tax_type') === 'percent' ? '%' : '0.00'}
-                    {...register('tax_value')}
-                  />
-                </div>
-              </div>
-            </div>
-            {/* Status */}
-            <Select label="Status" {...register('status')}>
-              <option value="draft">Draft</option>
-              <option value="sent">Sent</option>
-              <option value="paid">Paid</option>
-              <option value="cancelled">Cancelled</option>
-            </Select>
-                  <Button type="submit" fullWidth>{id ? 'Update invoice' : 'Create invoice'}</Button>
-                </form>
-              </CardContent>
-            </Card>
-          </div>
+                <Button type="submit" fullWidth>{id ? 'Update invoice' : 'Create invoice'}</Button>
+              </form>
+            </CardContent>
+          </Card>
         </div>
-      </div>
+      </PageScroll>
     </div>
   )
 }

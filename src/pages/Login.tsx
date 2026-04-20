@@ -10,7 +10,7 @@ import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
 import { Card, CardContent, CardHeader } from '../components/ui/Card'
 import { InlineAlert } from '../components/ui/InlineAlert'
-import { EnvironmentBadge } from '../components/ui/EnvironmentBadge'
+import { StatusBadge } from '../components/ui/StatusBadge'
 import { isNativePlatform } from '../lib/platform/capacitor'
 import { getAuthRedirectUrl } from '../lib/platform/auth'
 
@@ -38,6 +38,16 @@ export function Login() {
   const [loading, setLoading] = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
   const isNative = isNativePlatform()
+
+  useEffect(() => {
+    if (!isNative) return
+    document.documentElement.classList.add('app-shell-scroll-locked')
+    document.body.classList.add('app-shell-scroll-locked')
+    return () => {
+      document.documentElement.classList.remove('app-shell-scroll-locked')
+      document.body.classList.remove('app-shell-scroll-locked')
+    }
+  }, [isNative])
 
   useEffect(() => {
     if (isNative) return
@@ -124,19 +134,29 @@ export function Login() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center gap-8 p-4 bg-gray-50">
-      <header className="text-center max-w-sm space-y-3">
+    <div
+      className={[
+        'flex flex-col items-center justify-center gap-4 bg-gray-50 px-4',
+        isNative
+          ? 'h-[100dvh] overflow-hidden pt-[calc(env(safe-area-inset-top,0px)+1rem)] pb-[calc(env(safe-area-inset-bottom,0px)+1rem)]'
+          : 'min-h-screen gap-8 py-4',
+      ].join(' ')}
+    >
+      <header className="text-center max-w-sm space-y-2 md:space-y-3">
         <img
           src="/send-invoices-icon.png"
           alt=""
-          width="200"
-          height="auto"
-          className="mx-auto rounded-2xl shadow-sm ring-1 ring-gray-200/80"
+          className={[
+            'mx-auto rounded-2xl shadow-sm ring-1 ring-gray-200/80 h-auto',
+            isNative ? 'w-28' : 'w-[200px]',
+          ].join(' ')}
         />
         <h1 className="text-xl font-semibold text-gray-900">Send Invoices Online</h1>
-        <p className="text-sm text-gray-600 leading-relaxed">
-          Create invoices, manage customers and items, and email them from one simple place. Simple, no ads, no tracking.
-        </p>
+        {!isNative && (
+          <p className="text-sm text-gray-600 leading-relaxed">
+            Create invoices, manage customers and items, and email them from one simple place. Simple, no ads, no tracking.
+          </p>
+        )}
       </header>
       <Card className="w-full max-w-sm">
         <CardHeader>
@@ -211,7 +231,7 @@ export function Login() {
           </p>
         </CardContent>
       </Card>
-      <EnvironmentBadge />
+      <StatusBadge status={import.meta.env.PROD ? 'production' : 'development'} />
     </div>
   )
 }

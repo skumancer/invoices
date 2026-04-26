@@ -295,7 +295,7 @@ export function SettingsPage() {
             </CardContent>
           </Card>
           <div className="flex justify-center pb-4">
-            <StatusBadge status={import.meta.env.PROD ? 'production' : 'development'} />
+            <StatusBadge status={import.meta.env.MODE === 'production' ? 'production' : 'development'} />
           </div>
         </div>
       </PageScroll>

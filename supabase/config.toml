@@ -33,6 +33,9 @@ enabled = true
 [functions.send-invoice-email]
 verify_jwt = false
 
+[functions.ai-create-invoice]
+verify_jwt = false
+
 [auth.external.google]
 enabled = true
 client_id = "env(VITE_GOOGLE_CLIENT_ID)"

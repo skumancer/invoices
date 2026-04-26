@@ -586,24 +586,14 @@ export function InvoiceFormPage() {
                       <option value="percent">Percent</option>
                       <option value="fixed">Fixed amount</option>
                     </Select>
-                    <div className="col-span-1 flex min-w-0">
-                      {watch('tax_type') === 'fixed' && (
-                        <span className="inline-flex shrink-0 items-center rounded-l-lg border border-r-0 border-gray-300 bg-gray-50 px-2 py-2 text-sm text-gray-600 sm:px-3">
-                          $
-                        </span>
-                      )}
-                      <NativeInput
-                        type="number"
-                        min={0}
-                        step={0.01}
-                        wrapperClassName="min-w-0 flex-1"
-                        className={[
-                          watch('tax_type') === 'fixed' ? 'w-full rounded-r-lg' : 'w-full rounded-lg',
-                        ].join(' ')}
-                        placeholder={watch('tax_type') === 'percent' ? '%' : '0.00'}
-                        {...register('tax_value')}
-                      />
-                    </div>
+                    <NativeInput
+                      type="number"
+                      min={0}
+                      step={0.01}
+                      suffix={watch('tax_type') === 'fixed' ? '$' : watch('tax_type') === 'percent' ? '%' : ''}
+                      wrapperClassName="col-span-1 min-w-0"
+                      {...register('tax_value')}
+                    />
                   </div>
                 </div>
                 {/* Status */}

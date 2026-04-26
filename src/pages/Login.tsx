@@ -231,7 +231,7 @@ export function Login() {
           </p>
         </CardContent>
       </Card>
-      <StatusBadge status={import.meta.env.PROD ? 'production' : 'development'} />
+      <StatusBadge status={import.meta.env.MODE === 'production' ? 'production' : 'development'} />
     </div>
   )
 }

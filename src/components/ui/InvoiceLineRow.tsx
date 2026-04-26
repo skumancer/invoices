@@ -54,22 +54,20 @@ export function InvoiceLineRow({
           onQuantityChange(next === '' ? '' : Number(next))
         }}
       />
-      <div className="flex min-w-0 items-stretch overflow-hidden rounded border border-gray-300 text-sm">
-        <span className="inline-flex shrink-0 items-center border-r border-gray-300 bg-gray-50 py-1.5 pl-2 pr-1 text-sm text-gray-600">
-          $
-        </span>
-        <input
-          type="number"
-          min={0}
-          step={0.01}
-          className="min-w-0 w-full border-0 px-2 py-1.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900"
-          value={unitPrice}
-          onChange={(e) => {
-            const next = e.target.value
-            onUnitPriceChange(next === '' ? '' : Number(next))
-          }}
-        />
-      </div>
+      <NativeInput
+        density="compact"
+        type="number"
+        min={0}
+        step={0.01}
+        prefix="$"
+        wrapperClassName="min-w-0"
+        className="w-full min-w-0"
+        value={unitPrice}
+        onChange={(e) => {
+          const next = e.target.value
+          onUnitPriceChange(next === '' ? '' : Number(next))
+        }}
+      />
       <div className="flex min-w-0 items-center justify-center">
         <Button
           type="button"

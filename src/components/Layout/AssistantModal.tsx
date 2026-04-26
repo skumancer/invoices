@@ -2,6 +2,7 @@ import {
   type ButtonHTMLAttributes,
   type CSSProperties,
   type ReactNode,
+  type MouseEvent,
   forwardRef,
   useLayoutEffect,
   useMemo,
@@ -10,12 +11,14 @@ import {
 import { AssistantModalPrimitive, AssistantRuntimeProvider } from '@assistant-ui/react'
 import { AssistantChatTransport, useChatRuntime } from '@assistant-ui/react-ai-sdk'
 import { ChevronDown, Lightbulb } from 'lucide-react'
+import { createPortal } from 'react-dom'
 import { pageTitleClassName } from '../ui/typography'
 import { isAssistantConfigured } from '../InvoiceAssistant/assistantConfig'
 import { AssistantThreadView } from '../InvoiceAssistant/AssistantChatPanel'
 import { supabase } from '../../lib/supabase'
 import { AssistantModalContext } from './assistantModalContext'
 import { useNarrowViewport } from './useNarrowViewport'
+import { getPlatform, isNativePlatform } from '../../lib/platform/capacitor'
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL?.replace(/\/$/, '') ?? ''
 const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY ?? ''
@@ -111,6 +114,56 @@ function useAssistantMobileVisualViewportStyle(
   return style
 }
 
+function AssistantPanelBody({ open }: { open: boolean }) {
+  return (
+    <>
+      <div className="flex shrink-0 items-center border-b border-gray-200 px-4 py-3">
+        <h2 className={pageTitleClassName}>Invoice Assistant</h2>
+      </div>
+      <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden px-3 pb-3 pt-2 md:px-4 md:pb-4">
+        {!isAssistantConfigured() ? (
+          <p className="text-sm text-red-600">
+            Missing VITE_SUPABASE_URL. The assistant cannot reach your project.
+          </p>
+        ) : (
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+            <AssistantThreadView open={open} />
+          </div>
+        )}
+      </div>
+    </>
+  )
+}
+
+function AssistantNativeSheet({
+  open,
+  onClose,
+}: {
+  open: boolean
+  onClose: () => void
+}) {
+  if (!open) return null
+
+  const handleBackdropClick = (event: MouseEvent<HTMLDivElement>) => {
+    if (event.target === event.currentTarget) onClose()
+  }
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[120] flex flex-col justify-end bg-black/30 md:hidden"
+      onClick={handleBackdropClick}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Invoice Assistant"
+    >
+      <div className="flex h-[min(40rem,calc(100dvh-9rem))] min-h-0 flex-col rounded-t-2xl border border-gray-200 bg-white shadow-2xl">
+        <AssistantPanelBody open={open} />
+      </div>
+    </div>,
+    document.body,
+  )
+}
+
 /**
  * Popover panel: mobile enters from the header launcher (`origin-top-right`); desktop from the FAB
  * (`origin-bottom-right`) with slide + zoom.
@@ -138,6 +191,7 @@ const assistantPopoverContentClass =
 export function AssistantModalRoot({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false)
   const narrow = useNarrowViewport()
+  const nativeIOS = isNativePlatform() && getPlatform() === 'ios'
   const mobileViewportStyle = useAssistantMobileVisualViewportStyle(open, narrow)
 
   const transport = useMemo(
@@ -159,31 +213,22 @@ export function AssistantModalRoot({ children }: { children: ReactNode }) {
       <AssistantRuntimeProvider runtime={runtime}>
         <AssistantModalPrimitive.Root open={open} onOpenChange={setOpen} unstable_openOnRunStart={false}>
           {children}
-          <AssistantModalPrimitive.Content
-            side={narrow ? 'bottom' : 'top'}
-            align="end"
-            sideOffset={narrow ? 12 : 16}
-            avoidCollisions
-            collisionPadding={narrow ? { top: 4, bottom: 88, left: 10, right: 10 } : 12}
-            dissmissOnInteractOutside
-            className={`${assistantPopoverContentClass} z-[100]`}
-            style={mobileViewportStyle}
-          >
-            <div className="flex shrink-0 items-center border-b border-gray-200 px-4 py-3">
-              <h2 className={pageTitleClassName}>Invoice Assistant</h2>
-            </div>
-            <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden px-3 pb-3 pt-2 md:px-4 md:pb-4">
-              {!isAssistantConfigured() ? (
-                <p className="text-sm text-red-600">
-                  Missing VITE_SUPABASE_URL. The assistant cannot reach your project.
-                </p>
-              ) : (
-                <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-                  <AssistantThreadView />
-                </div>
-              )}
-            </div>
-          </AssistantModalPrimitive.Content>
+          {nativeIOS && narrow ? (
+            <AssistantNativeSheet open={open} onClose={close} />
+          ) : (
+            <AssistantModalPrimitive.Content
+              side={narrow ? 'bottom' : 'top'}
+              align="end"
+              sideOffset={narrow ? 12 : 16}
+              avoidCollisions
+              collisionPadding={narrow ? { top: 4, bottom: 88, left: 10, right: 10 } : 12}
+              dissmissOnInteractOutside
+              className={`${assistantPopoverContentClass} z-[100]`}
+              style={mobileViewportStyle}
+            >
+              <AssistantPanelBody open={open} />
+            </AssistantModalPrimitive.Content>
+          )}
         </AssistantModalPrimitive.Root>
       </AssistantRuntimeProvider>
     </AssistantModalContext>

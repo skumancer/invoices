@@ -18,6 +18,11 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
 #root {
   min-height: 100vh;
 }
@@ -52,4 +57,12 @@ input[type="datetime-local"] {
   display: block;
   min-width: 0;
   box-sizing: border-box;
+}
+
+@media (max-width: 767px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
 }

@@ -45,7 +45,7 @@ export function ItemsPage() {
   if (error) return <InlineAlert variant="error" appearance="plain">Error: {error.message}</InlineAlert>
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-4">
+    <div className="mx-auto flex min-h-0 w-full max-w-2xl flex-1 flex-col gap-4">
       <div className="flex shrink-0 items-center justify-between">
         <PageHeading>Line items</PageHeading>
         <Link to="/items/new">

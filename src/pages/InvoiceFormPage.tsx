@@ -455,7 +455,7 @@ export function InvoiceFormPage() {
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <PageScroll>
-        <div className="max-w-2xl space-y-4">
+        <div className="max-w-2xl mx-auto space-y-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <PageHeading>{id ? 'Edit invoice' : 'New invoice'}</PageHeading>
@@ -539,7 +539,7 @@ export function InvoiceFormPage() {
                 <br />
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Line items</label>
-                  <div className="min-w-0 space-y-2">
+                  <div className="min-w-0 space-y-1">
                     {lines.map((line, index) => (
                       <InvoiceLineRow
                         key={line.id}
@@ -577,7 +577,7 @@ export function InvoiceFormPage() {
                     )}
                   </div>
                 </div>
-                {/* Tax rate — full width (was grid-cols-2 with one child → half-width select on mobile) */}
+                {/* Tax rate */}
                 <div className="min-w-0">
                   <label className="block text-sm font-medium text-gray-700 mb-1">Tax</label>
                   <div className="grid min-w-0 grid-cols-3 gap-2">

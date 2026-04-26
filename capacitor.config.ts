@@ -12,11 +12,15 @@ const config: CapacitorConfig = {
     : undefined,
   ios: {
     scrollEnabled: true,
-    contentInset: 'automatic',
+    contentInset: 'never',
   },
   plugins: {
     App: {
       launchAutoHide: false,
+    },
+    Keyboard: {
+      resize: 'native',
+      resizeOnFullScreen: true,
     },
   },
 }

@@ -188,7 +188,7 @@ export function InvoiceDetailPage() {
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <PageScroll>
-        <div className="space-y-4">
+        <div className="mx-auto w-full max-w-2xl space-y-4">
           <div className="flex min-w-0 flex-col gap-3 md:flex-row md:items-start md:justify-between md:gap-4">
             <PageHeading className="min-w-0 shrink-0">Invoice - {invoice.number_display ?? invoice.number}</PageHeading>
             <div className="flex w-full min-w-0 flex-wrap items-stretch justify-end gap-1 print:hidden sm:gap-2 md:w-auto">

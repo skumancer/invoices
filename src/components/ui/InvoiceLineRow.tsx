@@ -24,10 +24,10 @@ export function InvoiceLineRow({
   onRemove,
 }: InvoiceLineRowProps) {
   return (
-    <div className="grid w-full min-w-0 grid-cols-[minmax(0,4fr)_minmax(0,1fr)_minmax(0,2fr)_minmax(0,1fr)] items-stretch gap-x-2">
-      <div className="flex min-w-0 items-stretch gap-1">
+    <div className="grid w-full min-w-0 grid-cols-[minmax(0,4fr)_minmax(0,1fr)_minmax(0,2fr)_auto] items-stretch gap-x-2">
+      <div className="flex min-w-0 items-stretch">
         <span
-          className="flex w-6 shrink-0 items-center justify-center text-sm font-medium tabular-nums text-gray-500"
+          className="flex w-4 shrink-0 items-center justify-start text-left text-sm font-medium tabular-nums text-gray-500"
           aria-hidden
         >
           {lineNumber}
@@ -68,12 +68,12 @@ export function InvoiceLineRow({
           onUnitPriceChange(next === '' ? '' : Number(next))
         }}
       />
-      <div className="flex min-w-0 items-center justify-center">
+      <div className="flex w-fit items-center justify-end">
         <Button
           type="button"
           variant="ghost"
-          size="sm"
-          className="shrink-0"
+          size="xs"
+          className="shrink-0 !gap-0 !p-0 !leading-none"
           onClick={onRemove}
           aria-label={`Remove line ${lineNumber}`}
         >

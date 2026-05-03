@@ -23,7 +23,8 @@ const navItems = [
 
 export function AppLayout() {
   const narrow = useNarrowViewport()
-  const nativeIOS = isNativePlatform() && getPlatform() === 'ios'
+  const nativeShell = isNativePlatform()
+  const nativeIOS = nativeShell && getPlatform() === 'ios'
   const [keyboardOpen, setKeyboardOpen] = useState(false)
   const showKeyboardLayout = keyboardOpen && nativeIOS && narrow
   const { user, signOut } = useAuth()
@@ -45,6 +46,18 @@ export function AppLayout() {
   const displayName = profileName || (user?.user_metadata?.full_name ?? user?.user_metadata?.name ?? 'Account')
   const email = user?.email ?? ''
   const staleSession = profileError && !profile
+
+  // Lock html/body scroll on native so the WKWebView UIScrollView doesn't compete with
+  // internal `.mobile-scroll` containers. Must be restored on unmount.
+  useEffect(() => {
+    if (!nativeShell) return
+    document.documentElement.classList.add('app-shell-scroll-locked')
+    document.body.classList.add('app-shell-scroll-locked')
+    return () => {
+      document.documentElement.classList.remove('app-shell-scroll-locked')
+      document.body.classList.remove('app-shell-scroll-locked')
+    }
+  }, [nativeShell])
 
   useEffect(() => {
     if (!nativeIOS || !narrow) return
@@ -118,6 +131,7 @@ export function AppLayout() {
         <div
           className={[
             'md:pl-52 flex min-h-0 flex-1 flex-col md:min-h-screen print:pl-0',
+            nativeShell ? 'max-md:h-[100dvh] max-md:overflow-hidden' : '',
           ].join(' ')}
         >
           <header className="fixed inset-x-0 top-0 z-10 flex h-[calc(4rem+env(safe-area-inset-top,0px))] flex-row items-center justify-between gap-3 border-b border-gray-200 bg-white px-2 pb-3 pt-[calc(env(safe-area-inset-top,0px)+0.5rem)] md:hidden print:hidden">
@@ -135,6 +149,7 @@ export function AppLayout() {
               showKeyboardLayout
                 ? 'max-md:pb-[calc(1.25rem+env(safe-area-inset-bottom,0px))]'
                 : 'max-md:pb-[calc(6.5rem+env(safe-area-inset-bottom,0px))]',
+              nativeShell ? 'max-md:overflow-hidden' : '',
             ].join(' ')}
           >
             {!connected && (
@@ -144,7 +159,8 @@ export function AppLayout() {
             )}
             <div
               className={[
-                'flex flex-1 min-h-0 min-w-0 flex-col md:overflow-visible',
+                'flex flex-1 min-h-0 min-w-0 flex-col',
+                nativeShell ? 'overflow-hidden' : 'md:overflow-visible',
               ].join(' ')}
             >
               <Outlet />

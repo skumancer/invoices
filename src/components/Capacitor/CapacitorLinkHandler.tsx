@@ -11,21 +11,16 @@ export function CapacitorLinkHandler() {
   useEffect(() => {
     if (!isNativePlatform()) return
 
-    let cleanup: (() => void) | null = null
-    CapacitorApp.addListener('appUrlOpen', ({ url }) => {
+    const listenerPromise = CapacitorApp.addListener('appUrlOpen', ({ url }) => {
       const path = getPathFromIncomingUrl(url)
       if (path) {
         void Browser.close()
         navigate(path, { replace: true })
       }
-    }).then((listener) => {
-      cleanup = () => {
-        void listener.remove()
-      }
     })
 
     return () => {
-      if (cleanup) cleanup()
+      void listenerPromise.then((listener) => listener.remove())
     }
   }, [navigate])
 

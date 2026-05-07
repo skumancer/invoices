@@ -11,7 +11,7 @@ const config: CapacitorConfig = {
     }
     : undefined,
   ios: {
-    scrollEnabled: true,
+    scrollEnabled: false,
     contentInset: 'never',
   },
   plugins: {

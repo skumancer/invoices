@@ -1,4 +1,4 @@
-package com.getcapacitor.myapp;
+package online.sendinvoices.app;
 
 import static org.junit.Assert.*;
 

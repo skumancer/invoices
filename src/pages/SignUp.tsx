@@ -9,6 +9,7 @@ import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
 import { Card, CardContent, CardHeader } from '../components/ui/Card'
 import { InlineAlert } from '../components/ui/InlineAlert'
+import { getAuthRedirectUrl } from '../lib/platform/auth'
 
 const schema = z.object({
   email: z.email('Invalid email'),
@@ -33,7 +34,7 @@ export function SignUp() {
     setError(null)
     setLoading(true)
     try {
-      const redirectTo = `${window.location.origin}/`
+      const redirectTo = getAuthRedirectUrl('/')
       const { data: authData, error: err } = await supabase.auth.signUp({
         email: data.email,
         password: data.password,

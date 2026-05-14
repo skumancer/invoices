@@ -12,6 +12,7 @@ import { Card, CardContent, CardHeader } from '../components/ui/Card'
 import { LoadingText } from '../components/ui/LoadingText'
 import { InlineAlert } from '../components/ui/InlineAlert'
 import { PageHeading } from '../components/ui/PageHeading'
+import { PageScroll } from '../components/Layout/PageScroll'
 import type { CustomerType } from '../types/database'
 
 const schema = z.object({
@@ -85,30 +86,34 @@ export function CustomerFormPage() {
   if (id && loadingCustomer) return <LoadingText />
 
   return (
-    <div className="max-w-lg">
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <PageHeading>{id ? 'Edit customer' : 'New customer'}</PageHeading>
-          <Link to="/customers">
-            <Button variant="ghost" size="sm">Cancel</Button>
-          </Link>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            {submitError ? <InlineAlert variant="error">{submitError}</InlineAlert> : null}
-            <Input label="Name" error={errors.name?.message} {...register('name')} />
-            <Select label="Type" {...register('type')}>
-              <option value="person">Person</option>
-              <option value="company">Company</option>
-            </Select>
-            <Input label="Email" type="email" error={errors.email?.message} {...register('email')} />
-            <Input label="Phone" {...register('phone')} />
-            <Input label="Address" {...register('address')} />
-            <Input label="Tax / ID number" placeholder="Optional" {...register('tax_id')} />
-            <Button type="submit" fullWidth>{id ? 'Update' : 'Create'}</Button>
-          </form>
-        </CardContent>
-      </Card>
+    <div className="flex min-h-0 flex-1 flex-col">
+      <PageScroll>
+        <div className="mx-auto w-full max-w-2xl">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <PageHeading>{id ? 'Edit customer' : 'New customer'}</PageHeading>
+              <Link to="/customers">
+                <Button variant="ghost" size="sm">Cancel</Button>
+              </Link>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+                {submitError ? <InlineAlert variant="error">{submitError}</InlineAlert> : null}
+                <Input label="Name" error={errors.name?.message} {...register('name')} />
+                <Select label="Type" {...register('type')}>
+                  <option value="person">Person</option>
+                  <option value="company">Company</option>
+                </Select>
+                <Input label="Email" type="email" error={errors.email?.message} {...register('email')} />
+                <Input label="Phone" {...register('phone')} />
+                <Input label="Address" {...register('address')} />
+                <Input label="Tax / ID number" placeholder="Optional" {...register('tax_id')} />
+                <Button type="submit" fullWidth>{id ? 'Update' : 'Create'}</Button>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
+      </PageScroll>
     </div>
   )
 }

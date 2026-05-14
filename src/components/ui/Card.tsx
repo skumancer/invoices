@@ -10,9 +10,9 @@ export function Card({ className = '', ...props }: HTMLAttributes<HTMLDivElement
 }
 
 export function CardHeader({ className = '', ...props }: HTMLAttributes<HTMLDivElement>) {
-  return <div className={['px-4 py-3 border-b border-gray-100', className].filter(Boolean).join(' ')} {...props} />
+  return <div className={['p-2 border-b border-gray-100', className].filter(Boolean).join(' ')} {...props} />
 }
 
 export function CardContent({ className = '', ...props }: HTMLAttributes<HTMLDivElement>) {
-  return <div className={['p-4', className].filter(Boolean).join(' ')} {...props} />
+  return <div className={['p-2', className].filter(Boolean).join(' ')} {...props} />
 }

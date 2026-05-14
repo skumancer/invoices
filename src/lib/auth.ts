@@ -22,11 +22,11 @@ export function getAuthErrorMessage(error: unknown): string {
   if (error == null) return GENERIC_ERROR
   if (typeof error === 'object' && error !== null && 'message' in error && typeof (error as { message: string }).message === 'string') {
     const msg = (error as { message: string }).message
-    if (/fetch|network|failed to load/i.test(msg)) {
+    if (/fetch|network|failed to load|load failed|authretryablefetcherror/i.test(msg)) {
       if (isLocalSupabase() && isOffDevice()) {
         return 'Cannot reach Supabase. This app is configured for localhost. Use your computer’s IP for VITE_SUPABASE_URL and open the app at that IP (see README).'
       }
-      return 'Network error. Check your connection and try again.'
+      return 'Network unavailable. Check your connection and try again.'
     }
     return msg
   }

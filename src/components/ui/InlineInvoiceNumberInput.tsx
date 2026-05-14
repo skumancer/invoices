@@ -26,7 +26,7 @@ export const InlineInvoiceNumberInput = forwardRef<HTMLInputElement, InlineInvoi
           {label}
         </label>
         <div className="flex items-stretch w-full relative">
-          <span className="inline-flex items-center px-3 py-2 rounded-l-lg border border-r-0 border-gray-300 bg-gray-50 text-gray-600 text-sm whitespace-nowrap relative z-0">
+          <span className="inline-flex items-center px-3 py-2 rounded-l-lg border border-r-0 border-gray-300 bg-gray-50 text-base text-gray-600 whitespace-nowrap relative z-0">
             {prefixLabel}
           </span>
           <div className="relative flex-none shrink-0">
@@ -34,7 +34,7 @@ export const InlineInvoiceNumberInput = forwardRef<HTMLInputElement, InlineInvoi
               ref={ref}
               style={{ width: `${inputWidthCh}ch`, minWidth: '12ch', ...style }}
               className={[
-                'px-3 py-2 border placeholder-gray-500',
+                'px-3 py-2 border text-base placeholder-gray-500',
                 'focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent',
                 error ? 'border-red-500' : 'border-gray-300',
                 'border-l-0 border-r-0 rounded-none relative z-10 focus:z-10',
@@ -57,7 +57,7 @@ export const InlineInvoiceNumberInput = forwardRef<HTMLInputElement, InlineInvoi
               </span>
             )}
           </div>
-          <span className="inline-flex items-center px-3 py-2 rounded-r-lg border border-gray-300 bg-gray-50 text-gray-600 text-sm whitespace-nowrap relative z-0">
+          <span className="inline-flex items-center px-3 py-2 rounded-r-lg border border-gray-300 bg-gray-50 text-base text-gray-600 whitespace-nowrap relative z-0">
             {suffixLabel}
           </span>
         </div>

@@ -3,6 +3,7 @@ import {
   MessagePrimitive,
   ThreadPrimitive,
 } from '@assistant-ui/react'
+import { useEffect, useRef } from 'react'
 import { StructuredAssistantText } from './StructuredAssistantText'
 
 const sendButtonClass = 'font-medium transition-colors inline-flex items-center justify-center gap-2 px-3 py-1.5 text-sm rounded-lg bg-gray-900 text-white hover:bg-gray-800 disabled:bg-gray-300 disabled:cursor-not-allowed'
@@ -39,10 +40,22 @@ function AssistantBubble() {
 }
 
 /** Thread + composer; must render under `AssistantRuntimeProvider`. */
-export function AssistantThreadView() {
+export function AssistantThreadView({ open }: { open?: boolean }) {
+  const rootRef = useRef<HTMLDivElement | null>(null)
+
+  useEffect(() => {
+    if (!open) return
+    const focusComposer = () => {
+      const input = rootRef.current?.querySelector('textarea')
+      input?.focus()
+    }
+    focusComposer()
+    requestAnimationFrame(focusComposer)
+  }, [open])
+
   return (
-    <ThreadPrimitive.Root className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-gray-200 bg-white">
-      <ThreadPrimitive.Viewport className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain p-3">
+    <ThreadPrimitive.Root ref={rootRef} className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-gray-200 bg-white">
+      <ThreadPrimitive.Viewport className="mobile-scroll min-h-0 flex-1 overflow-x-hidden p-3">
         <ThreadPrimitive.Empty>
           <p className="py-8 text-center text-sm text-gray-500">
             Describe the invoice (customer, line items, quantities, prices). The assistant will propose a draft for you.
@@ -61,7 +74,8 @@ export function AssistantThreadView() {
           <ComposerPrimitive.Input
             placeholder="Invoice Acme Corp for 3× consulting at 150 each"
             rows={1}
-            className="min-h-10 max-h-40 flex-1 resize-none rounded-lg border border-gray-300 px-3 py-2 text-base outline-none focus:border-gray-500 md:text-sm"
+            className="min-h-10 max-h-40 flex-1 resize-none rounded-lg border border-gray-300 px-3 py-2 text-base outline-none focus:border-gray-500"
+            autoFocus
             onFocus={resetLayoutScrollForMobileAssistant}
           />
           <ComposerPrimitive.Send className={sendButtonClass}>

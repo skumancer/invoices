@@ -35,7 +35,7 @@ export function Modal({ open, onClose, title, children, size = 'md' }: ModalProp
           <h2 className={pageTitleClassName}>{title}</h2>
           <Button variant="ghost" size="sm" onClick={onClose} aria-label="Close">×</Button>
         </div>
-        <div className="overflow-auto flex-1 p-4">{children}</div>
+        <div className="mobile-scroll flex-1 p-4">{children}</div>
       </div>
     </div>,
     document.body

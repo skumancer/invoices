@@ -7,6 +7,7 @@ import { ConfirmModal } from '../components/ui/ConfirmModal'
 import { LoadingText } from '../components/ui/LoadingText'
 import { InlineAlert } from '../components/ui/InlineAlert'
 import { PageHeading } from '../components/ui/PageHeading'
+import { PageScroll } from '../components/Layout/PageScroll'
 
 export function ItemsPage() {
   const { items, isLoading, error, remove } = useInvoiceItems()
@@ -44,14 +45,14 @@ export function ItemsPage() {
   if (error) return <InlineAlert variant="error" appearance="plain">Error: {error.message}</InlineAlert>
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
+    <div className="mx-auto flex min-h-0 w-full max-w-2xl flex-1 flex-col gap-4">
+      <div className="flex shrink-0 items-center justify-between">
         <PageHeading>Line items</PageHeading>
         <Link to="/items/new">
           <Button>Add item</Button>
         </Link>
       </div>
-      <div className="space-y-2">
+      <PageScroll innerClassName="space-y-2">
         {items.map((item) => (
           <Card key={item.id}>
             <CardContent className="p-4 flex flex-row items-center justify-between gap-4">
@@ -76,14 +77,14 @@ export function ItemsPage() {
             </CardContent>
           </Card>
         ))}
-      </div>
-      {items.length === 0 && (
-        <Card>
-          <CardContent className="p-8 text-center text-gray-500">
-            No items yet. <Link to="/items/new" className="text-gray-900 font-medium hover:underline">Add one</Link> to reuse on invoices.
-          </CardContent>
-        </Card>
-      )}
+        {items.length === 0 && (
+          <Card>
+            <CardContent className="p-8 text-center text-gray-500">
+              No items yet. <Link to="/items/new" className="text-gray-900 font-medium hover:underline">Add one</Link> to reuse on invoices.
+            </CardContent>
+          </Card>
+        )}
+      </PageScroll>
       <ConfirmModal
         open={!!deleteId}
         onClose={closeDelete}
@@ -97,8 +98,7 @@ export function ItemsPage() {
       >
         <p className="text-sm text-gray-700">
           Delete{' '}
-          <span className="font-medium text-gray-900">{itemPendingDelete?.name ?? 'this item'}</span>? This cannot be
-          undone.
+          <span className="font-medium text-gray-900">{itemPendingDelete?.name ?? 'this item'}</span>? This cannot be undone.
         </p>
       </ConfirmModal>
     </div>

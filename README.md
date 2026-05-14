@@ -106,6 +106,88 @@ Get a key from [Google AI Studio](https://aistudio.google.com/apikey). Local fun
 ## Scripts
 
 - `npm run dev` – start dev server
-- `npm run build` – production build
+- `npm run build` – production build (same as `build:prod`)
+- `npm run build:dev` – web build with Vite `development` mode (reads `.env.development` + `.env.development.local`)
+- `npm run build:prod` – web build with Vite `production` mode (reads `.env.production` + `.env.production.local`)
 - `npm run preview` – preview production build
+- `npm run build:mobile` – alias for `build:mobile:prod`
+- `npm run build:mobile:dev` – development-mode web build + Capacitor sync (local/staging Supabase)
+- `npm run build:mobile:prod` – production web build + Capacitor sync (release / store)
+- `npm run cap:dev:ios` – run iOS app from native project (supports live-reload via `CAPACITOR_SERVER_URL`)
+- `npm run cap:open:ios` – open Xcode project
+- `npm run cap:open:android` – open Android Studio project
+
+## Mobile app (Capacitor)
+
+This app now includes a Capacitor shell for iOS and Android while reusing the same React frontend and Supabase backend.
+
+### One-time setup
+
+```bash
+npm install
+```
+
+**Environment:** `VITE_*` values are embedded at build time. Use separate mode files so dev and production mobile builds point at different Supabase projects:
+
+| Build | Command | Typical env file |
+| --- | --- | --- |
+| Dev mobile (simulator, LAN Supabase) | `npm run build:mobile:dev` | `.env.development.local` |
+| Production / release | `npm run build:mobile:prod` | `.env.production.local` |
+
+```bash
+npm run build:mobile:dev
+# or
+npm run build:mobile:prod
+```
+
+Open native projects:
+
+```bash
+npm run cap:open:ios
+npm run cap:open:android
+```
+
+### Mobile auth redirect configuration
+
+For production mobile auth flows (signup confirmation, password reset), set a custom deep-link redirect URL:
+
+```
+VITE_MOBILE_AUTH_REDIRECT_URL=online.sendinvoices.app://auth
+```
+
+Then configure the same callback/deep-link in Supabase Auth redirect URLs so links return to the mobile app.
+
+### Mobile behavior implemented
+
+- Native deep-link listener (`appUrlOpen`) to route incoming auth links.
+- Native session persistence through Capacitor Preferences.
+- Native/offline status detection through Capacitor Network.
+- Invoice PDF save/share flow via Capacitor Filesystem + Share.
+
+### Mobile debugging (non-minified)
+
+- **Build-time development bundle**: run `npm run build:mobile:dev`, then open/run in Xcode. This uses Vite development mode with sourcemaps and no minification.
+- **Live reload from Vite**:
+  1. Start dev server: `npm run dev -- --host`
+  2. Run iOS with live URL: `CAPACITOR_SERVER_URL=http://<your-mac-lan-ip>:5173 npm run cap:dev:ios`
+  3. Keep simulator/device on the same network as your Mac
+
+## Mobile release checklist
+
+1. `npm run build:mobile:prod` (or `npm run build:mobile`)
+2. Verify auth on device:
+   - login/logout
+   - signup confirmation
+   - reset-password recovery link opens app
+3. Verify core flows on device:
+   - customers/items CRUD
+   - invoice create/edit/detail
+   - recurring stop action
+   - assistant draft generation
+   - send invoice email
+   - PDF share/export
+4. Set iOS signing/team + Android signing config in native IDEs.
+5. Build and distribute internal beta builds (TestFlight / Play internal testing).
+
+Detailed gate checklist: [`docs/mobile-parity-checklist.md`](docs/mobile-parity-checklist.md)
 

@@ -1,8 +1,8 @@
 import { forwardRef, type SelectHTMLAttributes } from 'react'
 
 const sizeClass = {
-  md: 'w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:outline-none  bg-white text-sm text-gray-900',
-  sm: 'px-3 py-1.5 text-sm font-medium border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:outline-none bg-white text-gray-700 w-auto min-w-0',
+  md: 'w-full h-10.5 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:outline-none bg-white text-gray-900',
+  sm: 'px-3 py-1.5 text-base font-medium border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:outline-none bg-white text-gray-700 w-auto min-w-0',
 }
 
 interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {

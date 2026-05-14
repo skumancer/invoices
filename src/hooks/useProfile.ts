@@ -1,6 +1,12 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
+import { signOutWithServerInvalidation } from '../lib/auth-session'
 import type { Profile } from '../types/database'
+
+function isInvalidSessionError(error: { code?: string; status?: number } | null): boolean {
+  if (!error) return false
+  return error.code === 'PGRST301' || error.status === 401
+}
 
 export function useProfile(userId: string | undefined) {
   const [profile, setProfile] = useState<Profile | null>(null)
@@ -13,6 +19,9 @@ export function useProfile(userId: string | undefined) {
     setError(null)
     const { data, error: selectErr } = await supabase.from('profiles').select('*').eq('id', userId).maybeSingle()
     if (selectErr) {
+      if (isInvalidSessionError(selectErr)) {
+        await signOutWithServerInvalidation()
+      }
       setProfile(null)
       setError(selectErr as Error)
       setLoading(false)
@@ -29,6 +38,9 @@ export function useProfile(userId: string | undefined) {
       .select()
       .single()
     if (insertErr) {
+      if (isInvalidSessionError(insertErr)) {
+        await signOutWithServerInvalidation()
+      }
       setProfile(null)
       setError(insertErr as Error)
       setLoading(false)

@@ -5,6 +5,7 @@ import { Card, CardContent } from '../components/ui/Card'
 import { LoadingText } from '../components/ui/LoadingText'
 import { InlineAlert } from '../components/ui/InlineAlert'
 import { PageHeading } from '../components/ui/PageHeading'
+import { PageScroll } from '../components/Layout/PageScroll'
 
 export function CustomersPage() {
   const { customers, isLoading, error } = useCustomers()
@@ -13,14 +14,14 @@ export function CustomersPage() {
   if (error) return <InlineAlert variant="error" appearance="plain">Error: {error.message}</InlineAlert>
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
+    <div className="mx-auto flex min-h-0 w-full max-w-2xl flex-1 flex-col gap-4">
+      <div className="flex shrink-0 items-center justify-between">
         <PageHeading>Customers</PageHeading>
         <Link to="/customers/new">
           <Button>Add customer</Button>
         </Link>
       </div>
-      <div className="space-y-2">
+      <PageScroll innerClassName="space-y-2">
         {customers.map((c) => (
           <Card key={c.id} className="hover:border-gray-300 transition-colors">
             <CardContent className="p-4 flex flex-row items-center justify-between gap-4">
@@ -37,14 +38,14 @@ export function CustomersPage() {
             </CardContent>
           </Card>
         ))}
-      </div>
-      {customers.length === 0 && (
-        <Card>
-          <CardContent className="p-8 text-center text-gray-500">
-            No customers yet. <Link to="/customers/new" className="text-gray-900 font-medium hover:underline">Add one</Link>.
-          </CardContent>
-        </Card>
-      )}
+        {customers.length === 0 && (
+          <Card>
+            <CardContent className="p-8 text-center text-gray-500">
+              No customers yet. <Link to="/customers/new" className="text-gray-900 font-medium hover:underline">Add one</Link>.
+            </CardContent>
+          </Card>
+        )}
+      </PageScroll>
     </div>
   )
 }

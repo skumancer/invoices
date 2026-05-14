@@ -25,10 +25,7 @@ export function StructuredAssistantText() {
   const [partialValue, setPartialValue] = useState<unknown>(undefined)
 
   useEffect(() => {
-    if (!isRunning) {
-      setPartialValue(undefined)
-      return
-    }
+    if (!isRunning) return
     let cancelled = false
     void parsePartialJson(text).then((r) => {
       if (cancelled || r.state === 'failed-parse' || r.state === 'undefined-input') return
@@ -38,6 +35,12 @@ export function StructuredAssistantText() {
       cancelled = true
     }
   }, [text, isRunning])
+
+  useEffect(() => {
+    if (isRunning) return
+    const id = requestAnimationFrame(() => setPartialValue(undefined))
+    return () => cancelAnimationFrame(id)
+  }, [isRunning])
 
   const parsed = useMemo(() => {
     if (isRunning) return null

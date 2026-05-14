@@ -1,13 +1,19 @@
+import { useEffect, useState } from 'react'
 import { Link, Outlet, useNavigate } from 'react-router-dom'
 import { AssistantModalPrimitive } from '@assistant-ui/react'
+import { Keyboard } from '@capacitor/keyboard'
 import { useAuth } from '../../contexts/useAuth'
 import { useProfileContext } from '../../contexts/useProfileContext'
 import { Button } from '../ui/Button'
 import { Card, CardContent } from '../ui/Card'
 import { pageTitleClassName } from '../ui/typography'
+import { InlineAlert } from '../ui/InlineAlert'
 import { NavLink } from './NavLink'
 import { AssistantLauncherButton, AssistantModalRoot } from './AssistantModal'
 import { useNarrowViewport } from './useNarrowViewport'
+import { useNetworkStatus } from '../../hooks/useNetworkStatus'
+import { getPlatform, isNativePlatform } from '../../lib/platform/capacitor'
+import { clearSupabaseAuthStorage } from '../../lib/platform/storage'
 
 const navItems = [
   { to: '/invoices', label: 'Invoices' },
@@ -17,15 +23,21 @@ const navItems = [
 
 export function AppLayout() {
   const narrow = useNarrowViewport()
+  const nativeShell = isNativePlatform()
+  const nativeIOS = nativeShell && getPlatform() === 'ios'
+  const [keyboardOpen, setKeyboardOpen] = useState(false)
+  const showKeyboardLayout = keyboardOpen && nativeIOS && narrow
   const { user, signOut } = useAuth()
   const { profile, error: profileError } = useProfileContext()
+  const { connected } = useNetworkStatus()
   const navigate = useNavigate()
 
   const handleSignOut = async () => {
     try {
       await signOut()
     } catch {
-      // e.g. network error; still send user to login
+      // Fallback for stale mobile sessions where auth storage survives network failures.
+      await clearSupabaseAuthStorage()
     }
     navigate('/login', { replace: true })
   }
@@ -34,6 +46,36 @@ export function AppLayout() {
   const displayName = profileName || (user?.user_metadata?.full_name ?? user?.user_metadata?.name ?? 'Account')
   const email = user?.email ?? ''
   const staleSession = profileError && !profile
+
+  // Lock html/body scroll on native so the WKWebView UIScrollView doesn't compete with
+  // internal `.mobile-scroll` containers. Must be restored on unmount.
+  useEffect(() => {
+    if (!nativeShell) return
+    document.documentElement.classList.add('app-shell-scroll-locked')
+    document.body.classList.add('app-shell-scroll-locked')
+    return () => {
+      document.documentElement.classList.remove('app-shell-scroll-locked')
+      document.body.classList.remove('app-shell-scroll-locked')
+    }
+  }, [nativeShell])
+
+  useEffect(() => {
+    if (!nativeIOS || !narrow) return
+
+    let showHandle: { remove: () => Promise<void> } | undefined
+    let hideHandle: { remove: () => Promise<void> } | undefined
+
+    const bind = async () => {
+      showHandle = await Keyboard.addListener('keyboardDidShow', () => setKeyboardOpen(true))
+      hideHandle = await Keyboard.addListener('keyboardDidHide', () => setKeyboardOpen(false))
+    }
+
+    void bind()
+    return () => {
+      if (showHandle) void showHandle.remove()
+      if (hideHandle) void hideHandle.remove()
+    }
+  }, [nativeIOS, narrow])
 
   if (staleSession) {
     return (
@@ -86,8 +128,13 @@ export function AppLayout() {
             </div>
           </div>
         </aside>
-        <div className="md:pl-52 flex-1 flex flex-col min-h-screen print:pl-0">
-          <header className="fixed inset-x-0 top-0 z-10 flex h-[calc(3.5rem+env(safe-area-inset-top,0px))] flex-row items-center justify-between gap-3 border-b border-gray-200 bg-white px-4 pt-[env(safe-area-inset-top,0px)] pb-3 md:hidden print:hidden">
+        <div
+          className={[
+            'md:pl-52 flex min-h-0 flex-1 flex-col md:min-h-screen print:pl-0',
+            nativeShell ? 'max-md:h-[100dvh] max-md:overflow-hidden' : '',
+          ].join(' ')}
+        >
+          <header className="fixed inset-x-0 top-0 z-10 flex h-[calc(4rem+env(safe-area-inset-top,0px))] flex-row items-center justify-between gap-3 border-b border-gray-200 bg-white px-2 pb-3 pt-[calc(env(safe-area-inset-top,0px)+0.5rem)] md:hidden print:hidden">
             <h1 className={`${pageTitleClassName} min-w-0 flex-1`}>Send Invoices Online</h1>
             {narrow && (
               <AssistantModalPrimitive.Trigger asChild>
@@ -95,11 +142,30 @@ export function AppLayout() {
               </AssistantModalPrimitive.Trigger>
             )}
           </header>
-          <main className="flex-1 flex flex-col min-h-0 min-w-0 px-4 py-4 max-md:pt-[calc(1rem+3.5rem+env(safe-area-inset-top,0px))] max-md:pb-[calc(9.5rem+env(safe-area-inset-bottom,0px))] md:p-4 md:px-6 print:py-6 print:px-6 print:pb-6">
-            <div className="flex flex-1 min-h-0 min-w-0 flex-col">
+          <main
+            className={[
+              'flex-1 flex flex-col min-h-0 min-w-0 px-2 py-4 md:p-4 md:px-6 print:py-6 print:px-6 print:pb-6',
+              'max-md:pt-[calc(1rem+4rem+env(safe-area-inset-top,0px))]',
+              showKeyboardLayout
+                ? 'max-md:pb-[calc(1.25rem+env(safe-area-inset-bottom,0px))]'
+                : 'max-md:pb-[calc(6.5rem+env(safe-area-inset-bottom,0px))]',
+              nativeShell ? 'max-md:overflow-hidden' : '',
+            ].join(' ')}
+          >
+            {!connected && (
+              <InlineAlert variant="error" appearance="plain" className="mb-3 print:hidden">
+                You are offline. Changes and sends may fail until your connection is restored.
+              </InlineAlert>
+            )}
+            <div
+              className={[
+                'flex flex-1 min-h-0 min-w-0 flex-col',
+                nativeShell ? 'overflow-hidden' : 'md:overflow-visible',
+              ].join(' ')}
+            >
               <Outlet />
             </div>
-            <footer className="mt-auto shrink-0 pt-6 border-t border-gray-100 print:hidden">
+            <footer className="mt-auto hidden shrink-0 border-t border-gray-100 pt-6 md:block print:hidden">
               <nav className="flex flex-wrap justify-center gap-x-3 gap-y-1 text-xs text-gray-500">
                 <Link to="/privacy" className="hover:text-gray-800 underline">
                   Privacy
@@ -110,7 +176,12 @@ export function AppLayout() {
               </nav>
             </footer>
           </main>
-          <div className="fixed bottom-0 left-0 right-0 md:hidden bg-white border-t border-gray-200 safe-area-pb print:hidden">
+          <div
+            className={[
+              'fixed bottom-0 left-0 right-0 md:hidden bg-white border-t border-gray-200 safe-area-pb print:hidden',
+              showKeyboardLayout ? 'hidden' : '',
+            ].join(' ')}
+          >
             <div className="px-3 py-2 flex items-center justify-between gap-2 border-b border-gray-100">
               <p className="text-xs text-gray-500 truncate flex-1 min-w-0" title={displayName}>
                 {displayName || 'Account'}

@@ -19,11 +19,13 @@ import { PrivacyPage } from './pages/PrivacyPage'
 import { TermsPage } from './pages/TermsPage'
 import { PublicLegalWrapper } from './pages/PublicLegalWrapper'
 import { NotFoundPage } from './pages/NotFoundPage'
+import { CapacitorLinkHandler } from './components/Capacitor/CapacitorLinkHandler'
 
 function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
+        <CapacitorLinkHandler />
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<SignUp />} />

@@ -178,7 +178,7 @@ export function SettingsPage() {
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <PageScroll>
-        <div className="mx-auto w-full max-w-2xl space-y-6">
+        <div className="max-w-2xl mx-auto w-full space-y-4">
           <PageHeading>Settings</PageHeading>
           <Card>
             <CardHeader>

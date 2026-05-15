@@ -21,7 +21,7 @@ export function CustomersPage() {
           <Button>Add customer</Button>
         </Link>
       </div>
-      <PageScroll innerClassName="space-y-2">
+      <PageScroll innerClassName="space-y-4">
         {customers.map((c) => (
           <Card key={c.id} className="hover:border-gray-300 transition-colors">
             <CardContent className="p-4 flex flex-row items-center justify-between gap-4">

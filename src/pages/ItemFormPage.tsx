@@ -71,7 +71,7 @@ export function ItemFormPage() {
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <PageScroll>
-        <div className="mx-auto w-full max-w-2xl">
+        <div className="max-w-2xl mx-auto w-full space-y-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <PageHeading>{id ? 'Edit item' : 'New item'}</PageHeading>

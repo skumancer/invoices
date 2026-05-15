@@ -52,7 +52,7 @@ export function ItemsPage() {
           <Button>Add item</Button>
         </Link>
       </div>
-      <PageScroll innerClassName="space-y-2">
+      <PageScroll innerClassName="space-y-4">
         {items.map((item) => (
           <Card key={item.id}>
             <CardContent className="p-4 flex flex-row items-center justify-between gap-4">

@@ -455,7 +455,7 @@ export function InvoiceFormPage() {
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <PageScroll>
-        <div className="max-w-2xl mx-auto space-y-4">
+        <div className="max-w-2xl mx-auto w-full space-y-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <PageHeading>{id ? 'Edit invoice' : 'New invoice'}</PageHeading>

@@ -26,6 +26,7 @@
 			<key>CFBundleURLSchemes</key>
 			<array>
 				<string>online.sendinvoices.app</string>
+				<string>com.googleusercontent.apps.556884778826-dkssnhvv1keupj6ftm9tn5945747arl6</string>
 			</array>
 		</dict>
 	</array>

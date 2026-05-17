@@ -20,11 +20,13 @@ import { TermsPage } from './pages/TermsPage'
 import { PublicLegalWrapper } from './pages/PublicLegalWrapper'
 import { NotFoundPage } from './pages/NotFoundPage'
 import { CapacitorLinkHandler } from './components/Capacitor/CapacitorLinkHandler'
+import { NativeSocialLoginBootstrap } from './components/Capacitor/NativeSocialLoginBootstrap'
 
 function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
+        <NativeSocialLoginBootstrap />
         <CapacitorLinkHandler />
         <Routes>
           <Route path="/login" element={<Login />} />

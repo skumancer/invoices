@@ -3,16 +3,16 @@ import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Browser } from '@capacitor/browser'
 import { supabase } from '../lib/supabase'
 import { getAuthErrorMessage } from '../lib/auth'
+import { signInWithGoogleNative } from '../lib/auth/social-login-native'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
 import { Card, CardContent, CardHeader } from '../components/ui/Card'
 import { InlineAlert } from '../components/ui/InlineAlert'
 import { StatusBadge } from '../components/ui/StatusBadge'
 import { isNativePlatform } from '../lib/platform/capacitor'
-import { getAuthRedirectUrl } from '../lib/platform/auth'
+import { GoogleIcon } from '../components/icons/GoogleIcon'
 
 const schema = z.object({
   email: z.email('Invalid email'),
@@ -114,18 +114,12 @@ export function Login() {
     setError(null)
     setGoogleLoading(true)
     try {
-      const { data, error: err } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: getAuthRedirectUrl('/invoices'),
-          skipBrowserRedirect: true,
-        },
-      })
-      if (err || !data?.url) {
-        setError(getAuthErrorMessage(err ?? new Error('Could not start Google sign in.')))
+      const { error: signInError } = await signInWithGoogleNative()
+      if (signInError) {
+        setError(getAuthErrorMessage(signInError))
         return
       }
-      await Browser.open({ url: data.url, presentationStyle: 'fullscreen' })
+      navigate(from, { replace: true })
     } catch (e) {
       setError(getAuthErrorMessage(e))
     } finally {
@@ -187,7 +181,8 @@ export function Login() {
                 onClick={handleGoogleNativeSignIn}
                 disabled={googleLoading}
               >
-                {googleLoading ? 'Opening Google…' : 'Continue with Google'}
+                <GoogleIcon />
+                {googleLoading ? 'Signing in…' : 'Continue with Google'}
               </Button>
             ) : (
               <>

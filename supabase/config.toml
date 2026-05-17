@@ -40,4 +40,4 @@ verify_jwt = false
 enabled = true
 client_id = "env(VITE_GOOGLE_CLIENT_ID)"
 secret = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_SECRET)"
-skip_nonce_check = false
+skip_nonce_check = true

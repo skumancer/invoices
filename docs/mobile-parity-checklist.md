@@ -7,7 +7,7 @@ Use this checklist before internal/external release builds.
 - [ ] Email/password login works on iOS and Android
 - [ ] Signup flow completes and redirects correctly
 - [ ] Password reset email opens app and reaches `/reset-password`
-- [ ] Google sign-in works through native browser OAuth flow
+- [ ] Google sign-in works via Capgo Social Login (native ID token → Supabase)
 - [ ] Logout clears session and returns to `/login`
 
 ## Core Data Flows

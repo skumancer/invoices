@@ -66,6 +66,8 @@ If you get `access_denied` or “app not verified”, check OAuth consent publis
 
 For Google Identity Services callback flow, set `VITE_GOOGLE_CLIENT_ID` in your frontend env (`.env.local`, hosting env vars).
 
+**Capacitor (iOS/Android):** Native Google sign-in uses [Capgo Social Login](https://capgo.app/docs/plugins/social-login/) and the same Supabase `signInWithIdToken` flow as web. See [docs/google-native-auth-setup.md](docs/google-native-auth-setup.md) for iOS/Android client IDs, SHA-1, and Info.plist URL scheme.
+
 ### 5. Recurring invoices (Supabase Cron)
 
 The function `public.generate_recurring_invoices()` is created by migrations. To run it on a schedule:

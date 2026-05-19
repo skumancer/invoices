@@ -1,6 +1,13 @@
 import { useParams } from 'react-router-dom'
 import { useState } from 'react'
-import { CalendarX2, FileText, Loader2, Mail, Printer, SquarePen } from 'lucide-react'
+import { CalendarX2, FileText, Loader2, Mail, Printer, SquarePen, Tags } from 'lucide-react'
+import type { InvoiceStatus } from '../types/database'
+import {
+  getAvailableInvoiceStatuses,
+  INVOICE_STATUS_LABELS,
+  statusChangeConfirmMessage,
+  statusChangeConfirmTitle,
+} from '../lib/invoice-status'
 import { useAuth } from '../contexts/useAuth'
 import { useInvoice } from '../hooks/useInvoices'
 import { useProfile } from '../hooks/useProfile'
@@ -51,8 +58,10 @@ export function InvoiceDetailPage() {
   const [sendDialogOpen, setSendDialogOpen] = useState(false)
   const [sendToEmail, setSendToEmail] = useState('')
   const [sendEmailMessage, setSendEmailMessage] = useState('')
-  const [markAsSentDialogOpen, setMarkAsSentDialogOpen] = useState(false)
-  const [markingAsSent, setMarkingAsSent] = useState(false)
+  const [markAsMenuOpen, setMarkAsMenuOpen] = useState(false)
+  const [pendingStatus, setPendingStatus] = useState<InvoiceStatus | null>(null)
+  const [updatingStatus, setUpdatingStatus] = useState(false)
+  const [statusActionError, setStatusActionError] = useState<string | null>(null)
   const [stopping, setStopping] = useState(false)
   const [stopError, setStopError] = useState<string | null>(null)
   const [stopRecurrenceDialogOpen, setStopRecurrenceDialogOpen] = useState(false)
@@ -134,21 +143,30 @@ export function InvoiceDetailPage() {
     }
     setSendResult({ ok: true, message: (data as { message?: string })?.message ?? 'Email sent.' })
     if (invoice?.status === 'draft') {
-      setMarkAsSentDialogOpen(true)
+      setPendingStatus('sent')
     }
   }
 
-  const handleMarkAsSent = async () => {
+  const applyInvoiceStatus = async (status: InvoiceStatus) => {
     if (!id) return
-    setMarkingAsSent(true)
-    const { error } = await supabase.from('invoices').update({ status: 'sent' }).eq('id', id)
-    setMarkingAsSent(false)
-    setMarkAsSentDialogOpen(false)
+    setUpdatingStatus(true)
+    setStatusActionError(null)
+    const { error } = await supabase.from('invoices').update({ status }).eq('id', id)
+    setUpdatingStatus(false)
+    setMarkAsMenuOpen(false)
+    setPendingStatus(null)
     if (error) {
-      setSendResult({ ok: false, message: error.message })
+      setStatusActionError(error.message)
       return
     }
     await refetch()
+  }
+
+  const handleSelectStatus = (status: InvoiceStatus) => {
+    if (!invoice) return
+    setMarkAsMenuOpen(false)
+    setStatusActionError(null)
+    setPendingStatus(status)
   }
 
   const handleStopRecurrence = async () => {
@@ -184,6 +202,7 @@ export function InvoiceDetailPage() {
   )
   const isLocked = invoice.status === 'sent' || invoice.status === 'paid' || invoice.status === 'cancelled'
   const canEdit = !isLocked || (invoice.is_recurring && invoice.status === 'sent')
+  const availableStatuses = getAvailableInvoiceStatuses(invoice.status)
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -217,6 +236,21 @@ export function InvoiceDetailPage() {
                 disabled={sending}
                 aria-label="Send invoice by email"
               />
+              {availableStatuses.length > 0 && (
+                <IconStackButton
+                  compact
+                  variant="secondary"
+                  icon={updatingStatus ? <Loader2 className="animate-spin" /> : <Tags />}
+                  label="Mark as"
+                  onClick={() => {
+                    setStatusActionError(null)
+                    setMarkAsMenuOpen(true)
+                  }}
+                  disabled={updatingStatus}
+                  aria-label="Change invoice status"
+                  aria-haspopup="dialog"
+                />
+              )}
               {invoice.is_recurring && (
                 <IconStackButton
                   compact
@@ -252,6 +286,48 @@ export function InvoiceDetailPage() {
               {stopError}
             </InlineAlert>
           )}
+          {statusActionError && !markAsMenuOpen && !pendingStatus && (
+            <InlineAlert variant="error" appearance="plain" className="text-sm print:hidden">
+              {statusActionError}
+            </InlineAlert>
+          )}
+          <Modal open={markAsMenuOpen} onClose={() => setMarkAsMenuOpen(false)} title="Mark as" size="sm">
+            <div className="space-y-2">
+              {availableStatuses.map((status) => (
+                <Button
+                  key={status}
+                  type="button"
+                  variant="secondary"
+                  fullWidth
+                  className="justify-start"
+                  onClick={() => handleSelectStatus(status)}
+                  disabled={updatingStatus}
+                >
+                  {INVOICE_STATUS_LABELS[status]}
+                </Button>
+              ))}
+            </div>
+          </Modal>
+          <ConfirmModal
+            open={pendingStatus !== null}
+            onClose={() => {
+              if (!updatingStatus) setPendingStatus(null)
+            }}
+            title={pendingStatus ? statusChangeConfirmTitle(pendingStatus) : ''}
+            confirmLabel={pendingStatus ? `Mark as ${INVOICE_STATUS_LABELS[pendingStatus].toLowerCase()}` : 'Confirm'}
+            cancelLabel="Cancel"
+            onConfirm={() => pendingStatus && void applyInvoiceStatus(pendingStatus)}
+            confirmVariant={pendingStatus === 'cancelled' ? 'danger' : 'primary'}
+            loading={updatingStatus}
+            confirmLoadingLabel="Updating…"
+            error={statusActionError}
+          >
+            {pendingStatus && invoice ? (
+              <p className="text-sm text-gray-700">
+                {statusChangeConfirmMessage(invoice.status, pendingStatus)}
+              </p>
+            ) : null}
+          </ConfirmModal>
           <Modal open={sendDialogOpen} onClose={() => setSendDialogOpen(false)} title="Send invoice by email">
             <div className="space-y-4">
               <Input
@@ -274,20 +350,6 @@ export function InvoiceDetailPage() {
               </div>
             </div>
           </Modal>
-          <ConfirmModal
-            open={markAsSentDialogOpen}
-            onClose={() => setMarkAsSentDialogOpen(false)}
-            title="Mark invoice as sent?"
-            confirmLabel="Yes, mark as sent"
-            cancelLabel="No, keep as draft"
-            onConfirm={handleMarkAsSent}
-            loading={markingAsSent}
-            confirmLoadingLabel="Updating…"
-          >
-            <p className="text-sm text-gray-700">
-              Would you like to mark this invoice as sent? Doing this will prevent editing the invoice again.
-            </p>
-          </ConfirmModal>
           <ConfirmModal
             open={stopRecurrenceDialogOpen}
             onClose={() => setStopRecurrenceDialogOpen(false)}

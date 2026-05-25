@@ -16,12 +16,14 @@ import { Input } from '../components/ui/Input'
 import { Card, CardContent, CardHeader } from '../components/ui/Card'
 import { InlineInvoiceNumberInput } from '../components/ui/InlineInvoiceNumberInput'
 import { LoadingText } from '../components/ui/LoadingText'
+import { PageLoadingState } from '../components/Layout/PageLoadingState'
 import { InlineAlert } from '../components/ui/InlineAlert'
 import { PageHeading } from '../components/ui/PageHeading'
 import { Select } from '../components/ui/Select'
 import { NativeInput } from '../components/ui/NativeInput'
 import { InvoiceLineRow } from '../components/ui/InvoiceLineRow'
 import { PageScroll } from '../components/Layout/PageScroll'
+import type { MobileFormShellProps } from '../components/Layout/mobileFormShell'
 import type { Customer, Invoice, InvoiceStatus, RecurrenceUnit, TaxType } from '../types/database'
 import type { InvoiceLine } from '../types/database'
 import type { InvoiceDraft } from '../types/invoice-draft'
@@ -104,7 +106,7 @@ interface LineRow {
   invoice_item_id: string | null
 }
 
-export function InvoiceFormPage() {
+export function InvoiceFormPage({ variant = 'page', onClose, onSuccess }: MobileFormShellProps = {}) {
   const { id } = useParams()
   const navigate = useNavigate()
   const location = useLocation()
@@ -119,6 +121,11 @@ export function InvoiceFormPage() {
   const initializedForId = useRef<string | null>(null)
   const draftFromAssistantApplied = useRef(false)
   const assistantDraftKeyRef = useRef<string | null>(null)
+
+  const exitAfterSave = (path: string) => {
+    if (variant === 'modal') onSuccess?.()
+    else navigate(path)
+  }
 
   const { register, handleSubmit, watch, reset, setValue, getValues, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema) as never,
@@ -366,7 +373,7 @@ export function InvoiceFormPage() {
         // would reformat from current settings (e.g. only editing next recurrence).
         if (invoice?.status === 'sent') {
           await update(id, basePayload, linePayload)
-          navigate(`/invoices/${id}`)
+          exitAfterSave(`/invoices/${id}`)
         } else {
           const existingNumber = invoice?.number ?? 0
           const desiredNumber = data.number ?? existingNumber
@@ -398,7 +405,7 @@ export function InvoiceFormPage() {
             .update({ counter: nextCounter })
             .eq('user_id', user.id)
           if (seqErr) throw seqErr
-          navigate(`/invoices/${id}`)
+          exitAfterSave(`/invoices/${id}`)
         }
       } else {
         const minAllowedNumber = (sequence?.counter ?? 0) + 1
@@ -435,7 +442,7 @@ export function InvoiceFormPage() {
           if (seqErr) throw seqErr
         }
 
-        navigate('/invoices')
+        exitAfterSave('/invoices')
       }
     } catch (e) {
       const anyErr = e as { message?: string; code?: string } | null | undefined
@@ -450,7 +457,163 @@ export function InvoiceFormPage() {
     }
   }
 
-  if (id && loadingInvoice) return <LoadingText />
+  if (id && loadingInvoice) return <PageLoadingState layout="content" />
+
+  const form = (
+    <form onSubmit={handleSubmit((data) => onSubmit(data as FormData))} className="space-y-6">
+      {submitError ? <InlineAlert variant="error">{submitError}</InlineAlert> : null}
+      <div>{invoiceNumberControl}</div>
+      <Select label="Customer" error={errors.customer_id?.message} {...register('customer_id')}>
+        <option value="">Select customer</option>
+        {customers.map((c) => (
+          <option key={c.id} value={c.id}>{c.name}</option>
+        ))}
+      </Select>
+      <br />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="min-w-0">
+          <Input label="Issue date" type="date" error={errors.issue_date?.message} {...register('issue_date')} />
+        </div>
+        <div className="min-w-0">
+          <Input label="Due date" type="date" error={errors.due_date?.message} {...register('due_date')} />
+        </div>
+      </div>
+      <div className="space-y-3">
+        <div className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            id="is_recurring"
+            {...register('is_recurring')}
+            className="rounded border-gray-300"
+          />
+          <label htmlFor="is_recurring" className="text-sm font-medium text-gray-700">
+            Recurring invoice
+          </label>
+        </div>
+        {isRecurring ? (
+          <div className="space-y-3">
+            <div className="flex min-w-0 flex-wrap items-center gap-2 text-sm text-gray-700">
+              <span className="shrink-0">Every</span>
+              <div className="grid min-w-0 flex-1 basis-0 grid-cols-3 gap-2">
+                <div className="col-span-1 min-w-0">
+                  <NativeInput
+                    type="number"
+                    min={1}
+                    wrapperClassName="min-w-0"
+                    className="w-full min-w-0"
+                    {...register('recurrence_every')}
+                  />
+                </div>
+                <div className="col-span-2 min-w-0">
+                  <Select containerClassName="min-w-0" {...register('recurrence_unit')}>
+                    <option value="days">days</option>
+                    <option value="weeks">weeks</option>
+                    <option value="months">months</option>
+                    <option value="years">years</option>
+                  </Select>
+                </div>
+              </div>
+            </div>
+            <div className="flex min-w-0 items-center gap-2 text-sm text-gray-700">
+              <span className="shrink-0">starting on</span>
+              <NativeInput
+                type="date"
+                wrapperClassName="min-w-0 flex-1"
+                className="w-full min-w-0"
+                {...register('next_run_date')}
+              />
+            </div>
+            {errors.next_run_date ? (
+              <p className="text-sm text-red-600">{errors.next_run_date.message}</p>
+            ) : null}
+          </div>
+        ) : null}
+      </div>
+      <br />
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">Line items</label>
+        <div className="min-w-0 space-y-1">
+          {lines.map((line, index) => (
+            <InvoiceLineRow
+              key={line.id}
+              lineNumber={index + 1}
+              description={line.description}
+              quantity={line.quantity}
+              unitPrice={line.unit_price}
+              onDescriptionChange={(value) => updateLine(line.id, 'description', value)}
+              onQuantityChange={(value) => updateLine(line.id, 'quantity', value)}
+              onUnitPriceChange={(value) => updateLine(line.id, 'unit_price', value)}
+              onRemove={() => removeLine(line.id)}
+            />
+          ))}
+        </div>
+        <br />
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <Button type="button" variant="secondary" size="sm" onClick={addLine}>
+            <CirclePlus className="h-4 w-4 shrink-0" aria-hidden />
+            Add line
+          </Button>
+          {items.length > 0 ? (
+            <Select
+              inputSize="sm"
+              value=""
+              onChange={(e) => {
+                const item = items.find((i) => i.id === e.target.value)
+                if (item) addItemAsLine(item)
+              }}
+            >
+              <option value="">Add saved item</option>
+              {items.map((i) => (
+                <option key={i.id} value={i.id}>{i.name}</option>
+              ))}
+            </Select>
+          ) : null}
+        </div>
+      </div>
+      <div className="min-w-0">
+        <label className="block text-sm font-medium text-gray-700 mb-1">Tax</label>
+        <div className="grid min-w-0 grid-cols-3 gap-2">
+          <Select containerClassName="col-span-2 min-w-0" {...register('tax_type')}>
+            <option value="">None</option>
+            <option value="percent">Percent</option>
+            <option value="fixed">Fixed amount</option>
+          </Select>
+          <NativeInput
+            type="number"
+            min={0}
+            step={0.01}
+            suffix={watch('tax_type') === 'fixed' ? '$' : watch('tax_type') === 'percent' ? '%' : ''}
+            wrapperClassName="col-span-1 min-w-0"
+            {...register('tax_value')}
+          />
+        </div>
+      </div>
+      <Select label="Status" {...register('status')}>
+        <option value="draft">Draft</option>
+        <option value="sent">Sent</option>
+        <option value="paid">Paid</option>
+        <option value="cancelled">Cancelled</option>
+      </Select>
+      <div className={variant === 'modal' ? 'flex gap-2' : undefined}>
+        {variant === 'modal' ? (
+          <Button type="button" variant="secondary" fullWidth onClick={onClose}>
+            Cancel
+          </Button>
+        ) : null}
+        <Button
+          type="submit"
+          fullWidth={variant === 'modal' ? undefined : true}
+          className={variant === 'modal' ? 'flex-1' : undefined}
+        >
+          {id ? 'Update invoice' : 'Create invoice'}
+        </Button>
+      </div>
+    </form>
+  )
+
+  if (variant === 'modal') {
+    return form
+  }
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -463,149 +626,7 @@ export function InvoiceFormPage() {
                 <Button variant="ghost" size="sm">Cancel</Button>
               </Link>
             </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSubmit((data) => onSubmit(data as FormData))} className="space-y-6">
-                {submitError ? <InlineAlert variant="error">{submitError}</InlineAlert> : null}
-                <div>
-                  {invoiceNumberControl}
-                </div>
-                <Select label="Customer" error={errors.customer_id?.message} {...register('customer_id')}>
-                  <option value="">Select customer</option>
-                  {customers.map((c) => (
-                    <option key={c.id} value={c.id}>{c.name}</option>
-                  ))}
-                </Select>
-                <br />
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <div className="min-w-0">
-                    <Input label="Issue date" type="date" error={errors.issue_date?.message} {...register('issue_date')} />
-                  </div>
-                  <div className="min-w-0">
-                    <Input label="Due date" type="date" error={errors.due_date?.message} {...register('due_date')} />
-                  </div>
-                </div>
-                {/* Recurring */}
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      id="is_recurring"
-                      {...register('is_recurring')}
-                      className="rounded border-gray-300"
-                    />
-                    <label htmlFor="is_recurring" className="text-sm font-medium text-gray-700">
-                      Recurring invoice
-                    </label>
-                  </div>
-                  {isRecurring && (
-                    <div className="space-y-3">
-                      <div className="flex min-w-0 flex-wrap items-center gap-2 text-sm text-gray-700">
-                        <span className="shrink-0">Every</span>
-                        <div className="grid min-w-0 flex-1 basis-0 grid-cols-3 gap-2">
-                          <div className="col-span-1 min-w-0">
-                            <NativeInput
-                              type="number"
-                              min={1}
-                              wrapperClassName="min-w-0"
-                              className="w-full min-w-0"
-                              {...register('recurrence_every')}
-                            />
-                          </div>
-                          <div className="col-span-2 min-w-0">
-                            <Select containerClassName="min-w-0" {...register('recurrence_unit')}>
-                              <option value="days">days</option>
-                              <option value="weeks">weeks</option>
-                              <option value="months">months</option>
-                              <option value="years">years</option>
-                            </Select>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex min-w-0 items-center gap-2 text-sm text-gray-700">
-                        <span className="shrink-0">starting on</span>
-                        <NativeInput
-                          type="date"
-                          wrapperClassName="min-w-0 flex-1"
-                          className="w-full min-w-0"
-                          {...register('next_run_date')}
-                        />
-                      </div>
-                      {errors.next_run_date && (
-                        <p className="text-sm text-red-600">{errors.next_run_date.message}</p>
-                      )}
-                    </div>
-                  )}
-                </div>
-                <br />
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Line items</label>
-                  <div className="min-w-0 space-y-1">
-                    {lines.map((line, index) => (
-                      <InvoiceLineRow
-                        key={line.id}
-                        lineNumber={index + 1}
-                        description={line.description}
-                        quantity={line.quantity}
-                        unitPrice={line.unit_price}
-                        onDescriptionChange={(value) => updateLine(line.id, 'description', value)}
-                        onQuantityChange={(value) => updateLine(line.id, 'quantity', value)}
-                        onUnitPriceChange={(value) => updateLine(line.id, 'unit_price', value)}
-                        onRemove={() => removeLine(line.id)}
-                      />
-                    ))}
-                  </div>
-                  <br />
-                  <div className="mt-2 flex flex-wrap items-center gap-2">
-                    <Button type="button" variant="secondary" size="sm" onClick={addLine}>
-                      <CirclePlus className="h-4 w-4 shrink-0" aria-hidden />
-                      Add line
-                    </Button>
-                    {items.length > 0 && (
-                      <Select
-                        inputSize="sm"
-                        value=""
-                        onChange={(e) => {
-                          const item = items.find((i) => i.id === e.target.value)
-                          if (item) addItemAsLine(item)
-                        }}
-                      >
-                        <option value="">Add saved item</option>
-                        {items.map((i) => (
-                          <option key={i.id} value={i.id}>{i.name}</option>
-                        ))}
-                      </Select>
-                    )}
-                  </div>
-                </div>
-                {/* Tax rate */}
-                <div className="min-w-0">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Tax</label>
-                  <div className="grid min-w-0 grid-cols-3 gap-2">
-                    <Select containerClassName="col-span-2 min-w-0" {...register('tax_type')}>
-                      <option value="">None</option>
-                      <option value="percent">Percent</option>
-                      <option value="fixed">Fixed amount</option>
-                    </Select>
-                    <NativeInput
-                      type="number"
-                      min={0}
-                      step={0.01}
-                      suffix={watch('tax_type') === 'fixed' ? '$' : watch('tax_type') === 'percent' ? '%' : ''}
-                      wrapperClassName="col-span-1 min-w-0"
-                      {...register('tax_value')}
-                    />
-                  </div>
-                </div>
-                {/* Status */}
-                <Select label="Status" {...register('status')}>
-                  <option value="draft">Draft</option>
-                  <option value="sent">Sent</option>
-                  <option value="paid">Paid</option>
-                  <option value="cancelled">Cancelled</option>
-                </Select>
-                <Button type="submit" fullWidth>{id ? 'Update invoice' : 'Create invoice'}</Button>
-              </form>
-            </CardContent>
+            <CardContent>{form}</CardContent>
           </Card>
         </div>
       </PageScroll>

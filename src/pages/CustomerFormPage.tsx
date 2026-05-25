@@ -9,10 +9,11 @@ import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
 import { Select } from '../components/ui/Select'
 import { Card, CardContent, CardHeader } from '../components/ui/Card'
-import { LoadingText } from '../components/ui/LoadingText'
+import { PageLoadingState } from '../components/Layout/PageLoadingState'
 import { InlineAlert } from '../components/ui/InlineAlert'
 import { PageHeading } from '../components/ui/PageHeading'
 import { PageScroll } from '../components/Layout/PageScroll'
+import type { MobileFormShellProps } from '../components/Layout/mobileFormShell'
 import type { CustomerType } from '../types/database'
 
 const schema = z.object({
@@ -26,7 +27,7 @@ const schema = z.object({
 
 type FormData = z.infer<typeof schema>
 
-export function CustomerFormPage() {
+export function CustomerFormPage({ variant = 'page', onClose, onSuccess }: MobileFormShellProps = {}) {
   const { id } = useParams()
   const navigate = useNavigate()
   const { user } = useAuth()
@@ -65,7 +66,8 @@ export function CustomerFormPage() {
           address: data.address || null,
           tax_id: data.tax_id?.trim() || null,
         })
-        navigate('/customers')
+        if (variant === 'modal') onSuccess?.()
+        else navigate('/customers')
       } else {
         await create({
           name: data.name,
@@ -76,14 +78,48 @@ export function CustomerFormPage() {
           tax_id: data.tax_id?.trim() || null,
           user_id: user.id,
         })
-        navigate('/customers')
+        if (variant === 'modal') onSuccess?.()
+        else navigate('/customers')
       }
     } catch (e) {
       setSubmitError(e instanceof Error ? e.message : 'Failed to save')
     }
   }
 
-  if (id && loadingCustomer) return <LoadingText />
+  if (id && loadingCustomer) return <PageLoadingState layout="content" />
+
+  const form = (
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      {submitError ? <InlineAlert variant="error">{submitError}</InlineAlert> : null}
+      <Input label="Name" error={errors.name?.message} {...register('name')} />
+      <Select label="Type" {...register('type')}>
+        <option value="person">Person</option>
+        <option value="company">Company</option>
+      </Select>
+      <Input label="Email" type="email" error={errors.email?.message} {...register('email')} />
+      <Input label="Phone" {...register('phone')} />
+      <Input label="Address" {...register('address')} />
+      <Input label="Tax / ID number" placeholder="Optional" {...register('tax_id')} />
+      <div className={variant === 'modal' ? 'flex gap-2' : undefined}>
+        {variant === 'modal' ? (
+          <Button type="button" variant="secondary" fullWidth onClick={onClose}>
+            Cancel
+          </Button>
+        ) : null}
+        <Button
+          type="submit"
+          fullWidth={variant === 'modal' ? undefined : true}
+          className={variant === 'modal' ? 'flex-1' : undefined}
+        >
+          {id ? 'Update' : 'Create'}
+        </Button>
+      </div>
+    </form>
+  )
+
+  if (variant === 'modal') {
+    return form
+  }
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -96,21 +132,7 @@ export function CustomerFormPage() {
                 <Button variant="ghost" size="sm">Cancel</Button>
               </Link>
             </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-                {submitError ? <InlineAlert variant="error">{submitError}</InlineAlert> : null}
-                <Input label="Name" error={errors.name?.message} {...register('name')} />
-                <Select label="Type" {...register('type')}>
-                  <option value="person">Person</option>
-                  <option value="company">Company</option>
-                </Select>
-                <Input label="Email" type="email" error={errors.email?.message} {...register('email')} />
-                <Input label="Phone" {...register('phone')} />
-                <Input label="Address" {...register('address')} />
-                <Input label="Tax / ID number" placeholder="Optional" {...register('tax_id')} />
-                <Button type="submit" fullWidth>{id ? 'Update' : 'Create'}</Button>
-              </form>
-            </CardContent>
+            <CardContent>{form}</CardContent>
           </Card>
         </div>
       </PageScroll>

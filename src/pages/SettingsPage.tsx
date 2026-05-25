@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import type { User } from '@supabase/supabase-js'
 import { useAuth } from '../contexts/useAuth'
 import { useProfileContext } from '../contexts/useProfileContext'
@@ -18,6 +18,9 @@ import { InlineAlert } from '../components/ui/InlineAlert'
 import { PageHeading } from '../components/ui/PageHeading'
 import { StatusBadge } from '../components/ui/StatusBadge'
 import { PageScroll } from '../components/Layout/PageScroll'
+import { useNarrowViewport } from '../components/Layout/useNarrowViewport'
+import { isNativePlatform } from '../lib/platform/capacitor'
+import { clearSupabaseAuthStorage } from '../lib/platform/storage'
 
 const profileSchema = z.object({
   first_name: z.string().max(100).optional(),
@@ -57,7 +60,11 @@ function signInMethodLabels(identities: { provider: string }[] | undefined): str
 }
 
 export function SettingsPage() {
-  const { user } = useAuth()
+  const { user, signOut } = useAuth()
+  const navigate = useNavigate()
+  const narrow = useNarrowViewport()
+  const nativeShell = isNativePlatform()
+  const showNativeMobileLogout = nativeShell && narrow
   const [resolvedUser, setResolvedUser] = useState<User | null>(null)
   const { profile, update: updateProfile } = useProfileContext()
   const { sequence, isLoading: sequenceLoading, updateSequence } = useInvoiceSequence(user?.id)
@@ -175,11 +182,20 @@ export function SettingsPage() {
     }
   }
 
+  const handleSignOut = async () => {
+    try {
+      await signOut()
+    } catch {
+      await clearSupabaseAuthStorage()
+    }
+    navigate('/login', { replace: true })
+  }
+
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <PageScroll>
         <div className="max-w-2xl mx-auto w-full space-y-4">
-          <PageHeading>Settings</PageHeading>
+          {!showNativeMobileLogout ? <PageHeading>Settings</PageHeading> : null}
           <Card>
             <CardHeader>
               <h3 className="font-medium text-gray-900">Account</h3>
@@ -294,6 +310,15 @@ export function SettingsPage() {
               </Link>
             </CardContent>
           </Card>
+          {showNativeMobileLogout ? (
+            <Card>
+              <CardContent className="pt-6">
+                <Button type="button" variant="secondary" fullWidth onClick={handleSignOut}>
+                  Log out
+                </Button>
+              </CardContent>
+            </Card>
+          ) : null}
           <div className="flex justify-center pb-4">
             <StatusBadge status={import.meta.env.MODE === 'production' ? 'production' : 'development'} />
           </div>

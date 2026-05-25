@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
+import { useDataInvalidationVersion } from '../contexts/DataInvalidationContext'
 import type { Invoice, InvoiceWithDetails, InvoiceLine } from '../types/database'
 
 export function useInvoices() {
@@ -23,11 +24,13 @@ export function useInvoices() {
     setLoading(false)
   }, [])
 
+  const invalidationVersion = useDataInvalidationVersion()
+
   useEffect(() => {
     queueMicrotask(() => {
       void fetchInvoices()
     })
-  }, [fetchInvoices])
+  }, [fetchInvoices, invalidationVersion])
 
   const create = useCallback(
     async (input: Omit<Invoice, 'id' | 'created_at' | 'updated_at'>, lines: Omit<InvoiceLine, 'id' | 'invoice_id'>[]) => {

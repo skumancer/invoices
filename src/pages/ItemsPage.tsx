@@ -4,10 +4,11 @@ import { useInvoiceItems } from '../hooks/useInvoiceItems'
 import { Button } from '../components/ui/Button'
 import { Card, CardContent } from '../components/ui/Card'
 import { ConfirmModal } from '../components/ui/ConfirmModal'
-import { LoadingText } from '../components/ui/LoadingText'
+import { PageLoadingState } from '../components/Layout/PageLoadingState'
 import { InlineAlert } from '../components/ui/InlineAlert'
 import { PageHeading } from '../components/ui/PageHeading'
 import { PageScroll } from '../components/Layout/PageScroll'
+import { useNativeMobileShell } from '../components/Layout/useNativeMobileShell'
 
 export function ItemsPage() {
   const { items, isLoading, error, remove } = useInvoiceItems()
@@ -40,18 +41,21 @@ export function ItemsPage() {
   }
 
   const itemPendingDelete = deleteId ? items.find((i) => i.id === deleteId) : undefined
+  const nativeMobile = useNativeMobileShell()
 
-  if (isLoading) return <LoadingText>Loading items...</LoadingText>
+  if (isLoading) return <PageLoadingState>Loading items...</PageLoadingState>
   if (error) return <InlineAlert variant="error" appearance="plain">Error: {error.message}</InlineAlert>
 
   return (
     <div className="mx-auto flex min-h-0 w-full max-w-2xl flex-1 flex-col gap-4">
-      <div className="flex shrink-0 items-center justify-between">
-        <PageHeading>Line items</PageHeading>
-        <Link to="/items/new">
-          <Button>Add item</Button>
-        </Link>
-      </div>
+      {!nativeMobile ? (
+        <div className="flex shrink-0 items-center justify-between">
+          <PageHeading>Line items</PageHeading>
+          <Link to="/items/new">
+            <Button>Add item</Button>
+          </Link>
+        </div>
+      ) : null}
       <PageScroll innerClassName="space-y-4">
         {items.map((item) => (
           <Card key={item.id}>

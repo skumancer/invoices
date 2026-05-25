@@ -2,25 +2,29 @@ import { Link } from 'react-router-dom'
 import { useCustomers } from '../hooks/useCustomers'
 import { Button } from '../components/ui/Button'
 import { Card, CardContent } from '../components/ui/Card'
-import { LoadingText } from '../components/ui/LoadingText'
+import { PageLoadingState } from '../components/Layout/PageLoadingState'
 import { InlineAlert } from '../components/ui/InlineAlert'
 import { PageHeading } from '../components/ui/PageHeading'
 import { PageScroll } from '../components/Layout/PageScroll'
+import { useNativeMobileShell } from '../components/Layout/useNativeMobileShell'
 
 export function CustomersPage() {
   const { customers, isLoading, error } = useCustomers()
+  const nativeMobile = useNativeMobileShell()
 
-  if (isLoading) return <LoadingText>Loading customers...</LoadingText>
+  if (isLoading) return <PageLoadingState>Loading customers...</PageLoadingState>
   if (error) return <InlineAlert variant="error" appearance="plain">Error: {error.message}</InlineAlert>
 
   return (
     <div className="mx-auto flex min-h-0 w-full max-w-2xl flex-1 flex-col gap-4">
-      <div className="flex shrink-0 items-center justify-between">
-        <PageHeading>Customers</PageHeading>
-        <Link to="/customers/new">
-          <Button>Add customer</Button>
-        </Link>
-      </div>
+      {!nativeMobile ? (
+        <div className="flex shrink-0 items-center justify-between">
+          <PageHeading>Customers</PageHeading>
+          <Link to="/customers/new">
+            <Button>Add customer</Button>
+          </Link>
+        </div>
+      ) : null}
       <PageScroll innerClassName="space-y-4">
         {customers.map((c) => (
           <Card key={c.id} className="hover:border-gray-300 transition-colors">

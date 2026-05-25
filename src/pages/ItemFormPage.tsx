@@ -8,10 +8,11 @@ import { useInvoiceItem, useInvoiceItems } from '../hooks/useInvoiceItems'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
 import { Card, CardContent, CardHeader } from '../components/ui/Card'
-import { LoadingText } from '../components/ui/LoadingText'
+import { PageLoadingState } from '../components/Layout/PageLoadingState'
 import { InlineAlert } from '../components/ui/InlineAlert'
 import { PageHeading } from '../components/ui/PageHeading'
 import { PageScroll } from '../components/Layout/PageScroll'
+import type { MobileFormShellProps } from '../components/Layout/mobileFormShell'
 
 const schema = z.object({
   name: z.string().min(1, 'Required'),
@@ -21,7 +22,7 @@ const schema = z.object({
 
 type FormData = z.infer<typeof schema>
 
-export function ItemFormPage() {
+export function ItemFormPage({ variant = 'page', onClose, onSuccess }: MobileFormShellProps = {}) {
   const { id } = useParams()
   const navigate = useNavigate()
   const { user } = useAuth()
@@ -56,17 +57,54 @@ export function ItemFormPage() {
       }
       if (id) {
         await update(id, payload)
-        navigate('/items')
+        if (variant === 'modal') onSuccess?.()
+        else navigate('/items')
       } else {
         await create(payload)
-        navigate('/items')
+        if (variant === 'modal') onSuccess?.()
+        else navigate('/items')
       }
     } catch (e) {
       setSubmitError(e instanceof Error ? e.message : 'Failed to save')
     }
   }
 
-  if (id && loadingItem) return <LoadingText />
+  if (id && loadingItem) return <PageLoadingState layout="content" />
+
+  const form = (
+    <form onSubmit={handleSubmit((data) => onSubmit(data as FormData))} className="space-y-4">
+      {submitError ? <InlineAlert variant="error">{submitError}</InlineAlert> : null}
+      <Input label="Name" error={errors.name?.message} {...register('name')} />
+      <Input label="Description" {...register('description')} />
+      <Input
+        label="Unit price"
+        type="number"
+        step="0.01"
+        prefix="$"
+        placeholder="0.00"
+        error={errors.unit_price?.message}
+        {...register('unit_price')}
+      />
+      <div className={variant === 'modal' ? 'flex gap-2' : undefined}>
+        {variant === 'modal' ? (
+          <Button type="button" variant="secondary" fullWidth onClick={onClose}>
+            Cancel
+          </Button>
+        ) : null}
+        <Button
+          type="submit"
+          fullWidth={variant === 'modal' ? undefined : true}
+          className={variant === 'modal' ? 'flex-1' : undefined}
+        >
+          {id ? 'Update' : 'Create'}
+        </Button>
+      </div>
+    </form>
+  )
+
+  if (variant === 'modal') {
+    return form
+  }
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -79,15 +117,7 @@ export function ItemFormPage() {
                 <Button variant="ghost" size="sm">Cancel</Button>
               </Link>
             </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSubmit((data) => onSubmit(data as FormData))} className="space-y-4">
-                {submitError ? <InlineAlert variant="error">{submitError}</InlineAlert> : null}
-                <Input label="Name" error={errors.name?.message} {...register('name')} />
-                <Input label="Description" {...register('description')} />
-                <Input label="Unit price" type="number" step="0.01" prefix="$" placeholder="0.00" error={errors.unit_price?.message} {...register('unit_price')} />
-                <Button type="submit" fullWidth>{id ? 'Update' : 'Create'}</Button>
-              </form>
-            </CardContent>
+            <CardContent>{form}</CardContent>
           </Card>
         </div>
       </PageScroll>

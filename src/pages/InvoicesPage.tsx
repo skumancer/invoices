@@ -4,16 +4,18 @@ import { formatDate } from '../lib/format'
 import { Button } from '../components/ui/Button'
 import { Card, CardContent } from '../components/ui/Card'
 import { recurrenceLabel } from '../lib/recurrence'
-import { LoadingText } from '../components/ui/LoadingText'
+import { PageLoadingState } from '../components/Layout/PageLoadingState'
 import { InlineAlert } from '../components/ui/InlineAlert'
 import { PageHeading } from '../components/ui/PageHeading'
 import { StatusBadge } from '../components/ui/StatusBadge'
 import { PageScroll } from '../components/Layout/PageScroll'
+import { useNativeMobileShell } from '../components/Layout/useNativeMobileShell'
 
 export function InvoicesPage() {
   const { invoices, isLoading, error } = useInvoices()
+  const nativeMobile = useNativeMobileShell()
 
-  if (isLoading) return <LoadingText>Loading invoices...</LoadingText>
+  if (isLoading) return <PageLoadingState>Loading invoices...</PageLoadingState>
   if (error) return <InlineAlert variant="error" appearance="plain">Error: {error.message}</InlineAlert>
 
   const recurring = invoices.filter((inv) => inv.is_recurring)
@@ -21,12 +23,14 @@ export function InvoicesPage() {
 
   return (
     <div className="mx-auto flex min-h-0 w-full max-w-2xl flex-1 flex-col gap-4">
-      <div className="flex shrink-0 items-center justify-between">
-        <PageHeading>Invoices</PageHeading>
-        <Link to="/invoices/new">
-          <Button>New invoice</Button>
-        </Link>
-      </div>
+      {!nativeMobile ? (
+        <div className="flex shrink-0 items-center justify-between">
+          <PageHeading>Invoices</PageHeading>
+          <Link to="/invoices/new">
+            <Button>New invoice</Button>
+          </Link>
+        </div>
+      ) : null}
       <PageScroll innerClassName="space-y-4">
         {recurring.length > 0 && (
           <div className="space-y-2">

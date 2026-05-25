@@ -19,7 +19,7 @@ import { ConfirmModal } from '../components/ui/ConfirmModal'
 import { Modal } from '../components/ui/Modal'
 import { Input } from '../components/ui/Input'
 import { Textarea } from '../components/ui/Textarea'
-import { LoadingText } from '../components/ui/LoadingText'
+import { PageLoadingState } from '../components/Layout/PageLoadingState'
 import { InlineAlert } from '../components/ui/InlineAlert'
 import { PageHeading } from '../components/ui/PageHeading'
 import { StatusBadge } from '../components/ui/StatusBadge'
@@ -191,7 +191,7 @@ export function InvoiceDetailPage() {
     await refetch()
   }
 
-  if (!id || isLoading) return <LoadingText />
+  if (!id || isLoading) return <PageLoadingState layout="content" />
   if (!invoice) return <InlineAlert variant="error" appearance="plain">Invoice not found.</InlineAlert>
 
   const customer = invoice.customer

@@ -18,6 +18,7 @@
     "lint": "eslint .",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:db": "supabase test db",
     "preview": "vite preview"
   },
   "dependencies": {
